@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -18,8 +18,6 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-
-      - uses: android-actions/setup-android@v3
 
       - name: Budowanie APK
         run: |
@@ -35,6 +33,7 @@ jobs:
       - name: Publikacja w Releases
         uses: softprops/action-gh-release@v2
         with:
+          target_commitish: ${{ github.sha }}
           tag_name: v1.${{ github.run_number }}
           name: SOR Kieszonkowy 1.${{ github.run_number }}
           body: Pobierz plik SOR-Kieszonkowy.apk na telefonie i zainstaluj.
