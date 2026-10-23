@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'pl.sor.kieszonkowy'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'pl.sor.kieszonkowy'
+        minSdk 24
+        targetSdk 34
+        // numer wersji rośnie automatycznie przy każdym buildzie na GitHubie
+        versionCode ((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
+        versionName "1." + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+    }
+
+    signingConfigs {
+        release {
+            storeFile file('sor-release.jks')
+            storePassword 'sorkieszonkowy'
+            keyAlias 'sor'
+            keyPassword 'sorkieszonkowy'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
