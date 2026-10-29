@@ -1,0 +1,890 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Płynoterapia SOR</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Układ: lepka belka pacjenta u góry, pod nią lista kalkulatorów w grupach; kalkulator otwiera się jako osobny widok (#hash). */
+:root{
+  --bg:#eef3f4; --surface:#ffffff; --surface2:#f6f9fa; --ink:#10232b; --muted:#566a72; --line:#d3dee1;
+  --accent:#0a6b7c; --accent-soft:#d9eef1; --on-accent:#ffffff;
+  --stop:#b42318; --stop-bg:#fdeceb; --warn:#9a5600; --warn-bg:#fff3dc; --info:#1c5ca3; --info-bg:#e7f0fb; --ok:#1d7440; --ok-bg:#e5f4ea;
+  --c1:#1c5ca3; --c2:#b42318; --c3:#c45a0a; --c4:#6a3fb0; --c5:#1d7440; --c6:#3d5560;
+  --f-ui:"Segoe UI Variable","Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;
+  --f-num:"Roboto Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c171b; --surface:#13232a; --surface2:#182b33; --ink:#e3eef0; --muted:#97aab1; --line:#2a3f47;
+  --accent:#4fc3d4; --accent-soft:#163a42; --on-accent:#06262c;
+  --stop:#ff8a80; --stop-bg:#3a1714; --warn:#f5b950; --warn-bg:#352611; --info:#8ab8f0; --info-bg:#14273d; --ok:#73d39b; --ok-bg:#12301f;
+  --c1:#8ab8f0; --c2:#ff8a80; --c3:#f5a25d; --c4:#bfa0f5; --c5:#73d39b; --c6:#a9bcc4; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c171b; --surface:#13232a; --surface2:#182b33; --ink:#e3eef0; --muted:#97aab1; --line:#2a3f47;
+  --accent:#4fc3d4; --accent-soft:#163a42; --on-accent:#06262c;
+  --stop:#ff8a80; --stop-bg:#3a1714; --warn:#f5b950; --warn-bg:#352611; --info:#8ab8f0; --info-bg:#14273d; --ok:#73d39b; --ok-bg:#12301f;
+  --c1:#8ab8f0; --c2:#ff8a80; --c3:#f5a25d; --c4:#bfa0f5; --c5:#73d39b; --c6:#a9bcc4; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 var(--f-ui);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--accent)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--accent);color:var(--on-accent)}
+header.top .in{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;display:flex;align-items:center;gap:10px}
+header.top h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.01em;flex:1;min-width:0}
+header.top h1 small{display:block;font-size:11.5px;font-weight:500;opacity:.85;letter-spacing:.04em;text-transform:uppercase}
+.back{background:transparent;border:1px solid currentColor;color:inherit;border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;cursor:pointer}
+.back:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--warn);outline-offset:2px}
+/* pacjent */
+.pt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin-top:12px}
+.pt summary{list-style:none;cursor:pointer;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pt summary::-webkit-details-marker{display:none}
+.pt summary b{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.pt .sum{font-variant-numeric:tabular-nums;font-weight:600;flex:1;min-width:0}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);letter-spacing:.02em}
+.pill.ex{background:var(--warn-bg);color:var(--warn)}
+.pt .body{padding:4px 14px 14px;display:grid;gap:10px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+label.f{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600;min-width:0}
+label.f .row{display:flex;gap:6px;align-items:stretch}
+input.n,select{width:100%;min-width:0;font:16px var(--f-ui);color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+input.n{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.unit{align-self:center;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.flags{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:13.5px;background:var(--surface2);cursor:pointer;user-select:none}
+.chk input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.chk.on{border-color:var(--accent);background:var(--accent-soft)}
+/* nawigacja */
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}
+.tabs button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 13px;font:600 13.5px var(--f-ui);cursor:pointer}
+.tabs button[aria-current="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{margin-top:8px}
+h2.grp{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px;display:flex;align-items:center;gap:8px}
+h2.grp i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.list{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.card{display:grid;grid-template-columns:4px 1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);text-align:left;font:inherit;color:inherit;cursor:pointer;padding:0;overflow:hidden}
+.card .bar{background:var(--cc)}
+.card .t{padding:10px 12px;min-width:0}
+.card strong{display:block;font-size:15px}
+.card span{display:block;font-size:12.5px;color:var(--muted)}
+.card:hover{border-color:var(--cc)}
+/* kalkulator */
+.calc-h{margin:16px 0 4px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.calc-h h2{margin:0;font-size:21px;text-wrap:balance}
+.calc-h .cat{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--cc)}
+.lead{color:var(--muted);margin:2px 0 12px;font-size:13.5px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px}
+.res{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-top:12px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--cc);border-radius:var(--r);overflow:hidden}
+.res .o{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:baseline}
+.res .o:last-child{border-bottom:0}
+.res .o .l{font-size:13.5px;color:var(--muted);min-width:0}
+.res .o .v{font:700 17px var(--f-num);font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere;min-width:0}
+.res .o.big .v{font-size:24px;color:var(--cc)}
+.res .o .s{grid-column:1/-1;font-size:12.5px;color:var(--muted);margin-top:-2px}
+.msgs{display:grid;gap:8px;margin-top:12px}
+.m{border-radius:10px;padding:9px 12px 9px 12px;font-size:14px;border:1px solid transparent;display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start}
+.m .k{font:800 11px var(--f-ui);letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:5px;margin-top:2px}
+.m.stop{background:var(--stop-bg);color:var(--stop);border-color:var(--stop)}
+.m.stop .k{background:var(--stop);color:var(--surface)}
+.m.warn{background:var(--warn-bg);color:var(--warn)}
+.m.warn .k{background:var(--warn);color:var(--surface)}
+.m.info{background:var(--info-bg);color:var(--info)}
+.m.info .k{background:var(--info);color:var(--surface)}
+.m.ok{background:var(--ok-bg);color:var(--ok)}
+.m.ok .k{background:var(--ok);color:var(--surface)}
+.m span{color:var(--ink)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{border:0;background:var(--accent);color:var(--on-accent);font:700 14px var(--f-ui);border-radius:10px;padding:10px 14px;cursor:pointer}
+.btn.sec{background:var(--surface);color:var(--accent);border:1px solid var(--accent)}
+.fx{margin-top:12px;font-size:13px;color:var(--muted);background:var(--surface2);border:1px dashed var(--line);border-radius:10px;padding:10px 12px}
+.fx code{font-family:var(--f-num);font-size:12.5px;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.src{margin-top:12px;display:grid;gap:6px;font-size:13px}
+.src a{color:var(--accent)}
+.badge{font-size:11px;font-weight:800;padding:1px 6px;border-radius:5px;margin-right:6px;white-space:nowrap}
+.badge.v{background:var(--ok-bg);color:var(--ok)}
+.badge.c{background:var(--warn-bg);color:var(--warn)}
+.badge.n{background:var(--info-bg);color:var(--info)}
+/* treści */
+.doc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-top:12px}
+.doc h3{margin:4px 0 8px;font-size:16px}
+.doc ul{margin:0;padding-left:20px;display:grid;gap:5px}
+.tw{overflow-x:auto;margin-top:8px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+.tw table{min-width:620px}
+.tw td:last-child{min-width:190px}
+th .u{text-transform:none;letter-spacing:0;font-weight:500}
+.tw td:first-child,.tw th:first-child{position:sticky;left:0;z-index:1;background:var(--surface);font-weight:600;min-width:110px;box-shadow:1px 0 0 var(--line)}
+.tw th:first-child{background:var(--surface2)}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--surface2);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.pass{color:var(--ok);font-weight:800}
+td.fail{color:var(--stop);font-weight:800}
+.lb{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.rec{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.rec-h{font-size:11.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);padding:9px 14px 6px;border-bottom:1px solid var(--line);background:var(--accent-soft)}
+.rec-r{display:grid;grid-template-columns:104px minmax(0,1fr);gap:10px;padding:9px 14px;border-bottom:1px solid var(--line);font-size:14px;align-items:start}
+.rec-r:last-child{border-bottom:0}
+.rk{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;border-radius:6px;text-align:center}
+.rk.ok{background:var(--ok-bg);color:var(--ok)}.rk.ex{background:var(--info-bg);color:var(--info)}.rk.av{background:var(--stop-bg);color:var(--stop)}
+.unitnote{font-size:13px;color:var(--muted);margin:8px 0 0}
+.foot{margin-top:28px;font-size:12px;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top"><div class="in">
+  <button class="back" id="btnBack" hidden aria-label="Wróć do listy">‹ Lista</button>
+  <h1><small>ER Drug Guide — Poland · moduł</small>Płynoterapia na dyżurze</h1>
+</div></header>
+
+<main class="wrap">
+  <div id="view"></div>
+  <p class="foot">Kalkulatory wspierają decyzję, nie zastępują oceny klinicznej. Każdy wynik to objętość startowa — oceniaj pacjenta po każdym bolusie. Wersja modułu 1.2 · stan wiedzy: październik 2026.</p>
+</main>
+
+<script>
+"use strict";
+/* ================= RDZEŃ OBLICZEŃ (czyste funkcje) ================= */
+const F={
+  hsD:w=>w<=10?100*w:w<=20?1000+50*(w-10):1500+20*(w-20),
+  hs421:w=>w<=10?4*w:w<=20?40+2*(w-10):60+(w-20),
+  neo:d=>d<=1?[50,60]:d<=3?[70,80]:d<=5?[80,100]:[100,120],
+  ibw:(s,h)=>(s==='M'?50:45.5)+0.91*(h-152.4),
+  adj:(i,w)=>i+0.4*(w-i),
+  bmi:(w,h)=>w/((h/100)**2),
+  bsa:(w,h)=>Math.sqrt(w*h/3600),
+  tbwF:(s,a)=>a<18?0.6:a>=65?(s==='M'?0.5:0.45):(s==='M'?0.6:0.5),
+  adr:(naInf,kInf,naS,tbw)=>(naInf+kInf-naS)/(tbw+1),
+  fwd:(tbw,na)=>tbw*(na/140-1),
+  katz:(na,g)=>na+1.6*(g-100)/100,
+  hill:(na,g)=>na+2.4*(g-100)/100,
+  toMgdl:(v,u)=>u==='mmol'?v*18.016:v,
+  toMmol:(v,u)=>u==='mmol'?v:v/18.016,
+  ureaMmol:(v,t)=>t==='mmol'?v:t==='bun'?v/2.8:v/6.0,
+  osm:(na,gMmol,uMmol)=>2*na+gMmol+uMmol,
+  ag:(na,cl,h)=>na-(cl+h),
+  agc:(ag,albGdl)=>ag+2.5*(4-albGdl),
+  prep3:V=>V*(513-154)/(1711-513),
+  drops:(ml,h,f)=>ml*f/(h*60),
+  apls:ay=>{if(ay<1)return 0.5*Math.floor(ay*12+1e-6)+4;const y=Math.floor(ay+1e-6);if(y<=5)return 2*y+8;if(y<=12)return 3*y+7;return null},
+  aplsOld:ay=>{const y=Math.floor(ay+1e-6);return(y>=1&&y<=10)?(y+4)*2:null},
+  rot:(tbsa,w)=>Math.round(tbsa/10)*10*10+(w>80?Math.floor((w-80)/10+1e-9)*100:0),
+  galv:(bsa,tbsa)=>5000*bsa*tbsa/100+2000*bsa,
+  ageY:(v,u)=>u==='d'?v/365.25:u==='m'?v/12:v,
+};
+const FLUIDS={ // Na, K (mmol/l) do wzoru Adrogué-Madias
+  'nacl3':{n:'3% NaCl',na:513,k:0},'nacl09':{n:'0,9% NaCl',na:154,k:0},'rl':{n:'Ringer z mleczanami',na:130,k:4},
+  'opt':{n:'Optilyte / PWE',na:141,k:5},'nacl045':{n:'0,45% NaCl',na:77,k:0},'g5':{n:'5% glukoza',na:0,k:0}};
+
+/* ================= ŹRÓDŁA ================= */
+const SRC={
+ ssc21:{t:'Evans L i wsp. Surviving Sepsis Campaign 2021 (dorośli). Crit Care Med / Intensive Care Med 2021',pm:'34599691',st:'v'},
+ ssc26:{t:'Surviving Sepsis Campaign 2026 – rekomendacje dla dorosłych (zestawienie SCCM)',u:'https://sccm.org/survivingsepsiscampaign/guidelines-and-resources/surviving-sepsis-campaign-adult-guidelines',st:'c'},
+ sscKid:{t:'Weiss SL i wsp. SSC – dzieci 2020; aktualizacja 2026 (SCCM)',pm:'32032273',u2:'https://sccm.org/survivingsepsiscampaign/guidelines-and-resources/surviving-sepsis-campaign-pediatric-guidelines',st:'v'},
+ erc25:{t:'European Resuscitation Council 2025 – Paediatric Life Support',u:'https://www.resuscitationjournal.com/article/S0300-9572(25)00282-5/fulltext',st:'v'},
+ aba23:{t:'Cartotto R i wsp. ABA Clinical Practice Guidelines on Burn Shock Resuscitation. J Burn Care Res 2023',pm:'38051821',st:'v'},
+ abls:{t:'ABA – Advanced Burn Life Support (tempa startowe, cele diurezy)',u:'https://michiganburn.org/docs/PedsGuidelinesforBurnResuscitation.pdf',st:'c'},
+ rot:{t:'Chung KK i wsp. „Rule of Tens” (USAISR) – wzór przedszpitalny',st:'c'},
+ galv:{t:'Wzór Galveston (Shriners) – dzieci',st:'c'},
+ lund:{t:'Lund CC, Browder NC. Surg Gynecol Obstet 1944 – tabela powierzchni',st:'c'},
+ ada24:{t:'Umpierrez GE i wsp. Hyperglycemic Crises in Adults With Diabetes: A Consensus Report. Diabetes Care 2024',pm:'39052901',st:'v'},
+ jbds:{t:'JBDS-IP – The management of diabetic ketoacidosis in adults (2021/2023)',u:'https://abcd.care/sites/default/files/site_uploads/JBDS_Guidelines_Archive/JBDS_02%20_DKA_Guideline_amended_v2_June_2021_Archive.pdf',st:'v'},
+ ispad22:{t:'Glaser N i wsp. ISPAD Clinical Practice Consensus Guidelines 2022: DKA and HHS. Pediatr Diabetes 2022',pm:'36250645',st:'v'},
+ bsped:{t:'BSPED – Integrated Care Pathway for DKA in Children (v3)',u:'https://www.bsped.org.uk/media/v2ydcuv0/bsped-dka-guideline-v3.pdf',st:'v'},
+ spas:{t:'Spasovski G i wsp. Clinical practice guideline on diagnosis and treatment of hyponatraemia. Eur J Endocrinol 2014',pm:'24569496',st:'v'},
+ adrHypo:{t:'Adrogué HJ, Madias NE. Hyponatremia. N Engl J Med 2000',pm:'10824078',st:'v'},
+ adrHyper:{t:'Adrogué HJ, Madias NE. Hypernatremia. N Engl J Med 2000',pm:'10816188',st:'v'},
+ chauhan:{t:'Chauhan K i wsp. Rate of correction of hypernatremia and health outcomes. CJASN 2019',pm:'30948456',st:'v'},
+ katz:{t:'Katz MA. Hyperglycemia-induced hyponatremia. N Engl J Med 1973',pm:'4763428',st:'v'},
+ hill:{t:'Hillier TA i wsp. Hyponatremia: evaluating the correction factor for hyperglycemia. Am J Med 1999',pm:'10225241',st:'v'},
+ aap18:{t:'Feld LG i wsp. Clinical Practice Guideline: Maintenance IV Fluids in Children. Pediatrics 2018',pm:'30478247',st:'v'},
+ hs57:{t:'Holliday MA, Segar WE. The maintenance need for water in parenteral fluid therapy. Pediatrics 1957',pm:'13431307',st:'v'},
+ nice29:{t:'NICE NG29 – IV fluid therapy in children and young people in hospital (akt. 2020)',u:'https://www.nice.org.uk/guidance/ng29',st:'c'},
+ nice174:{t:'NICE CG174 – IV fluid therapy in adults in hospital',u:'https://www.nice.org.uk/guidance/cg174',st:'c'},
+ nice84:{t:'NICE CG84 – Diarrhoea and vomiting caused by gastroenteritis in under 5s',u:'https://www.nice.org.uk/guidance/cg84',st:'c'},
+ nice133:{t:'NICE NG133 – Hypertension in pregnancy',u:'https://www.nice.org.uk/guidance/ng133',st:'c'},
+ cdc:{t:'CDC MMWR 2003 – Managing acute gastroenteritis among children (ORS)',u:'https://www.cdc.gov/mmwr/preview/mmwrhtml/rr5216a1.htm',st:'v'},
+ rossaint:{t:'Rossaint R i wsp. European guideline on management of major bleeding and coagulopathy following trauma, 6th ed. Crit Care 2023',pm:'36859355',st:'v'},
+ atls:{t:'ATLS – Advanced Trauma Life Support, 10. wyd. (ACS)',st:'c'},
+ escHf:{t:'ESC 2021 – wytyczne niewydolności serca',st:'c'},
+ nsw:{t:'NSW Clinical Excellence Commission – High-risk medicines: potassium',u:'https://cec.health.nsw.gov.au/therapeutics-safety/high-risk/potassium',st:'v'},
+ imsn:{t:'IMSN – Best Practice Guideline on IV Potassium (2020)',u:'https://imsn.ie/wp-content/uploads/2020/10/IMSN-Best-Practice-Guideline-on-IV-Potassium-Oct-2020-approved.pdf',st:'v'},
+ apls:{t:'Graves L i wsp. APLS weight formulas in UK children (PICU, 10 081 przyjęć). Resuscitation 2014',pm:'24727134',st:'v'},
+ bsh:{t:'BSH 2016 – Guidelines on transfusion for fetuses, neonates and older children',st:'c'},
+ aabb23:{t:'Carson JL i wsp. Red Blood Cell Transfusion: 2023 AABB International Guidelines. JAMA 2023; badanie MINT (NEJM 2023)',st:'c'},
+ pl_krew:{t:'Wytyczne w zakresie leczenia krwią i jej składnikami (Obwieszczenie Ministra Zdrowia) i procedury szpitalnego banku krwi',st:'c'},
+ figge:{t:'Figge J i wsp. Anion gap and hypoalbuminemia. Crit Care Med 1998',st:'c'},
+ mosteller:{t:'Mosteller RD. Simplified calculation of body-surface area. N Engl J Med 1987',st:'c'},
+ devine:{t:'Devine BJ 1974 / ARDSNet – masa należna (IBW)',st:'c'},
+ kdigo:{t:'KDIGO 2012 – Acute Kidney Injury',u:'https://kdigo.org/guidelines/acute-kidney-injury/',st:'c'},
+ ema:{t:'EMA/PRAC 2022 i decyzja KE z 24.05.2022 – zawieszenie roztworów HES',u:'https://www.aifa.gov.it/documents/20142/1622129/2022.05.31_NII_HES_EN.pdf',st:'v'},
+ chpl:{t:'ChPL – Rejestr Produktów Leczniczych (ezdrowie.gov.pl): Optilyte, Sterofundin ISO, KCl 15%, MgSO₄ 20%, preparaty wapnia',u:'https://rejestrymedyczne.ezdrowie.gov.pl/',st:'c'},
+};
+
+/* ================= STAN ================= */
+const FLAGDEF=[['hf','Niewydolność serca'],['ckd','Niewydolność nerek / dializy'],['tbi','Uraz mózgu (TBI)'],['preg','Ciąża / preeklampsja'],['malnut','Niedożywienie'],['icu','Brak dostępu do OIT']];
+const EMPTY={w:'',age:'',ageU:'l',sex:'M',h:'',dehyd:'',dehydPct:'',shock:'',flags:{}};
+let P=JSON.parse(JSON.stringify(EMPTY)); let isExample=false; const V={};
+function load(){try{const s=localStorage.getItem('plyny.pt');if(s){const o=JSON.parse(s);if(!o.ex){P=Object.assign(JSON.parse(JSON.stringify(EMPTY)),o.P);P.flags=Object.assign({},o.P&&o.P.flags)}}}catch(e){}}
+function save(){try{localStorage.setItem('plyny.pt',JSON.stringify({P,ex:isExample}))}catch(e){}}
+function num(x){if(x===undefined||x===null||x===''||x===false)return NaN;if(typeof x==='number')return x;const t=String(x).replace(/\s/g,'').replace(',','.').replace(/[^0-9.\-]/g,'');return t===''?NaN:parseFloat(t)}
+function pat(){
+  const w=num(P.w),h=num(P.h),a=num(P.age);const ageY=Number.isFinite(a)?F.ageY(a,P.ageU):NaN;
+  const grp=!Number.isFinite(ageY)?'?':ageY*365.25<28?'neo':ageY<18?'kid':'adult';
+  const chk=[];let hh=h;
+  if(Number.isFinite(h)){const b0=w>0?F.bmi(w,h):NaN;
+    if(h<40||h>230){chk.push(`Wzrost ${f(h)} cm poza zakresem 40–230 cm — pominięty w obliczeniach.`);hh=NaN}
+    else if(Number.isFinite(b0)&&(b0<10||b0>80)){chk.push(`Wzrost ${f(h)} cm nie pasuje do masy ${f(w,1)} kg (BMI ${f(b0,1)}) — wzrost pominięty w obliczeniach. Popraw wzrost lub masę.`);hh=NaN}}
+  if(Number.isFinite(w)&&Number.isFinite(ageY)){
+    if(ageY<13){const exp=ageY*365.25<28?3.5:F.apls(ageY);if(exp&&(w>exp*1.8||w<exp*0.5))chk.push(`Masa ${f(w,1)} kg nie pasuje do wieku (oczekiwane ok. ${f(exp)} kg wg APLS). Sprawdź masę i jednostkę wieku (lat / mies. / dni).`)}
+    else if(ageY>=18&&w<30)chk.push('Masa <30 kg u dorosłego — sprawdź masę i jednostkę wieku.');}
+  if(P.dehyd==='pct'&&P.dehydPct!==''&&P.dehydPct!==undefined&&!(num(P.dehydPct)>=0&&num(P.dehydPct)<=20))chk.push('Odwodnienie % poza zakresem 0–20 — pominięte.');
+  const bmi=(w>0&&hh>0)?F.bmi(w,hh):NaN;
+  const ibw=(hh>0)?F.ibw(P.sex,hh):NaN;
+  const dg=P.dehyd||'';let dehyd=NaN;const inf=Number.isFinite(ageY)&&ageY<1;
+  if(dg==='l')dehyd=inf?5:3;else if(dg==='u')dehyd=inf?10:6;else if(dg==='c')dehyd=inf?15:9;else if(dg==='pct')dehyd=num(P.dehydPct);
+  if(Number.isFinite(dehyd)&&(dehyd<0||dehyd>20))dehyd=NaN;
+  return {w,h:hh,ageY,grp,sex:P.sex,bmi,ibw,elderly:ageY>=65,f:Object.assign({},P.flags),dehyd,dehydG:dg,chk,shock:SHOCK[P.shock]?P.shock:''};
+}
+function f(x,d=0){return Number.isFinite(x)?x.toLocaleString('pl-PL',{minimumFractionDigits:0,maximumFractionDigits:d}):'—'}
+const GRPN={neo:'noworodek',kid:'dziecko',adult:'dorosły','?':'wiek ?'};
+const DEHN={l:'lekkie',u:'umiarkowane',c:'ciężkie',pct:'wpisane'};
+const SHOCK={
+ sept:{n:'septyczny',go:['sepsa-dorosly','sepsa-dziecko'],t:'Dorośli: zbilansowany krystaloid 30 ml/kg w ≤3 h, cel MAP ≥65 mmHg, wcześnie noradrenalina. Dzieci: bolusy 10 ml/kg z oceną po każdym, do 40–60 ml/kg w 1. godzinie. Antybiotyk w ciągu 1 h.'},
+ hipo:{n:'hipowolemiczny (utrata płynów)',go:['odwodnienie','sepsa-dziecko'],t:'Bolus izotonicznego krystaloidu (dorośli 500 ml, dzieci 10 ml/kg), ocena po każdym; potem deficyt + podtrzymanie. Bolusów nie odejmuj od deficytu.'},
+ krw:{n:'krwotoczny',go:['uraz','krew'],t:'Zatrzymaj krwawienie. Minimum krystaloidu (dorośli do 1 l, dzieci ≤20 ml/kg), wcześnie krew 1:1:1, kwas traneksamowy ≤3 h od urazu, hipotensja permisywna (bez TBI).'},
+ kard:{n:'kardiogenny',go:['kardiogenny'],t:'Bez dużych bolusów — najwyżej porcja testowa (dorośli 200–250 ml, dzieci 5 ml/kg) przy braku przewodnienia. Leczenie przyczynowe, inotropy/wazopresory.'},
+ obt:{n:'obturacyjny (odma, tamponada, zator)',go:['kardiogenny'],t:'Usuń przeszkodę: odbarczenie odmy prężnej, perikardiocenteza, tromboliza w zatorowości z wstrząsem. Płyny tylko małymi porcjami jako pomost.'},
+ anaf:{n:'anafilaktyczny',go:['sepsa-dorosly','sepsa-dziecko'],t:'Adrenalina i.m. 0,01 mg/kg (maks. 0,5 mg) — dawka w module leków. Bolus krystaloidu: dorośli 500–1000 ml, dzieci 10 ml/kg, powtarzaj wg odpowiedzi.'},
+ nieokr:{n:'niezróżnicowany',go:['sepsa-dorosly','sepsa-dziecko','kardiogenny'],t:'Do czasu ustalenia przyczyny: małe bolusy (dorośli 250–500 ml, dzieci 10 ml/kg) z oceną po każdym; POCUS (RUSH) — serce, płuca, żyła główna dolna, wolny płyn, aorta.'},
+};
+
+/* ================= BUDOWNICZY WYNIKU ================= */
+function mk(){const r={out:[],msg:[],val:{},fx:'',src:[],act:[]};
+  r.o=(l,v,s,big)=>{r.out.push({l,v,s,big});return r};
+  r.m=(lv,t)=>{r.msg.push({lv,t});return r};
+  r.f=t=>{r.fx=t;return r};r.s=(...k)=>{r.src.push(...k);return r};return r}
+function needW(p,r){
+  if(!Number.isFinite(p.w)){r.m('stop','Podaj masę ciała pacjenta (panel „Pacjent” u góry).');return false}
+  if(p.w<0.4||p.w>300){r.m('stop','Masa ciała poza zakresem 0,4–300 kg. Sprawdź wpis.');return false}
+  if(p.w>250)r.m('warn','Masa >250 kg — upewnij się, że wpis jest poprawny.');
+  return true}
+function needNa(na,r,lab='Na⁺'){
+  if(!Number.isFinite(na)){r.m('info',`Wpisz ${lab}.`);return false}
+  if(na<90||na>210){r.m('stop',`${lab} = ${f(na)} mmol/l jest nieprawdopodobne. Powtórz oznaczenie.`);return false}
+  return true}
+function popOf(v,p){return v.pop&&v.pop!=='auto'?v.pop:p.grp}
+
+/* ================= KALKULATORY ================= */
+const CATS={pod:['Płyny podtrzymujące i odwodnienie','--c1'],wst:['Wstrząs i bolusy','--c2'],krew:['Przetoczenie składników krwi','--c2'],opa:['Oparzenia','--c3'],na:['Sód i osmolalność','--c4'],dka:['DKA / HHS','--c5'],el:['Elektrolity i pomocnicze','--c6']};
+const POP=['sel','pop','Populacja',[['auto','automatycznie (wg wieku)'],['adult','dorosły'],['kid','dziecko'],['neo','noworodek donoszony']],'auto'];
+const GLU=(k='glu',l='Glukoza')=>[['num',k,l,null,''],['sel',k+'U','Jednostka glukozy',[['mg','mg/dl'],['mmol','mmol/l']],'mg']];
+
+const CALCS=[
+/* 1 */{id:'podtrzymanie',cat:'pod',t:'Płyny podtrzymujące',d:'Holliday-Segar 4-2-1 / 100-50-20, noworodki, dorośli',
+ inp:[POP,['num','day','Doba życia (noworodek)','doba',3],['sel','restr','Ryzyko SIADH (dzieci)',[['1','brak — 100%'],['0.8','ograniczenie do 80%'],['0.5','ograniczenie do 50%']],'1']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const pop=popOf(v,p);
+  if(pop==='?'){r.m('info','Podaj wiek albo wybierz populację ręcznie.');return r}
+  if(p.shock)r.m('stop',`Wstrząs ${SHOCK[p.shock].n}: najpierw resuscytacja (bolusy / krew), nie płyny podtrzymujące.`);
+  if(Number.isFinite(p.dehyd)&&p.dehyd>0)r.m('warn',`Pacjent odwodniony (${f(p.dehyd)}%) — samo podtrzymanie nie wystarczy. Użyj kalkulatora „Deficyt w odwodnieniu”: deficyt ${f(p.dehyd*p.w*10)} ml + podtrzymanie.`);
+  if(pop==='kid'){const k=num(v.restr)||1;const d=F.hsD(p.w)*k,h=F.hs421(p.w)*k;const cap=Math.min(h,100);
+   r.o('Na dobę (100-50-20)',f(d)+' ml/d',f(d/24,1)+' ml/h',false).o('Godzinowo (4-2-1)',f(cap,1)+' ml/h',k<1?`ograniczenie do ${k*100}% zapotrzebowania`:'',true);
+   r.val={day:d,h421:h,capped:cap};
+   if(h>100)r.m('warn',`4-2-1 daje ${f(h,1)} ml/h — przycięto do praktycznego limitu 100 ml/h (płyny podtrzymujące i.v.).`);
+   r.m('info','Płyn: izotoniczny krystaloid (Na⁺ 131–154 mmol/l) z glukozą 5% i KCl wg K⁺. Na⁺, K⁺ i glukoza na początku i co ≥24 h; bilans co 12 h.');
+   r.m('stop','Nie stosuj hipotonicznych płynów (np. 0,18% NaCl/5% glukoza) jako podtrzymujących — ryzyko hiponatremii szpitalnej.');
+   if(k===1)r.m('info','Rozważ 50–80% przy ryzyku SIADH: zapalenie opon, zapalenie oskrzelików, stan po operacji, ból, nudności, uraz OUN.');
+   r.f('≤10 kg: 100 ml/kg/d (4 ml/kg/h)\n10–20 kg: 1000 ml + 50 ml/kg >10 kg (40 ml/h + 2 ml/kg/h)\n>20 kg: 1500 ml + 20 ml/kg >20 kg (60 ml/h + 1 ml/kg/h)\nUwaga: 4-2-1 i 100-50-20 dają nieco inne wartości.').s('hs57','aap18','nice29');
+   if(p.w>60)r.m('warn','Masa >60 kg u dziecka — rozważ schemat dla dorosłych (25–30 ml/kg/d).');
+  }else if(pop==='neo'){const day=Math.round(num(v.day));if(!(day>=1&&day<=28)){r.m('info','Wpisz dobę życia 1–28.');return r}
+   const [a,b]=F.neo(day);r.o(`Doba ${day}: zakres`,`${a}–${b} ml/kg/d`).o('Objętość na dobę',`${f(a*p.w)}–${f(b*p.w)} ml`,'',true).o('Tempo',`${f(a*p.w/24,1)}–${f(b*p.w/24,1)} ml/h`);
+   r.val={lo:a*p.w,hi:b*p.w};
+   r.m(day<8?'warn':'info',day<8?'Do 7. doby płyn dobiera się wg lokalnego protokołu neonatologicznego — konsultacja neonatologiczna.':'Od 8. doby: izotoniczny krystaloid (Na⁺ 131–154) z glukozą 5–10%.');
+   r.m('stop','Wcześniaki — poza zakresem modułu.');
+   r.f('Doba 1: 50–60 · doby 2–3: 70–80 · doby 4–5: 80–100 · doby 6–28: 100–120 ml/kg/d').s('nice29');
+  }else{let lo=25,hi=30;const risk=p.f.hf||p.f.ckd||p.elderly||p.f.malnut;if(risk){lo=20;hi=25}
+   let wb=p.w,basis='masa rzeczywista';if(p.bmi>30&&Number.isFinite(p.ibw)){wb=p.ibw;basis='masa należna (IBW), BMI >30'}
+   r.o('Woda na dobę',`${f(lo*wb)}–${f(hi*wb)} ml`,`${lo}–${hi} ml/kg/d · ${basis}`,true).o('Tempo',`${f(lo*wb/24,1)}–${f(hi*wb/24,1)} ml/h`)
+    .o('Na⁺ / K⁺ / Cl⁻',`ok. ${f(wb)} mmol/d`,'każdy ok. 1 mmol/kg/d').o('Glukoza','50–100 g/d','tylko ograniczenie ketozy, to nie jest żywienie');
+   r.val={lo:lo*wb,hi:hi*wb};
+   if(risk)r.m('warn','20–25 ml/kg/d: wiek ≥65 lat, niewydolność serca lub nerek, niedożywienie (ryzyko zespołu ponownego odżywienia).');
+   if(p.f.preg)r.m('warn','Preeklampsja: płyny łącznie ≤80 ml/h, jeśli brak innych bieżących strat.');
+   r.m('info','Typowy błąd: „1000 ml 0,9% NaCl co 8 h” to 2–4 × więcej sodu i wody niż zapotrzebowanie.');
+   r.f('Dorośli: 25–30 ml/kg/d wody; 20–25 ml/kg/d przy czynnikach ryzyka; otyłość → IBW').s('nice174','nice133');}
+  return r}},
+/* 2 */{id:'odwodnienie',cat:'pod',t:'Deficyt w odwodnieniu',d:'Deficyt + podtrzymanie + straty; ORS',
+ inp:[['num','pct','Stopień odwodnienia (puste = z panelu pacjenta)','%',''],['num','wPrev','Masa sprzed choroby (opcjonalnie)','kg',''],['chk','hyperNa','Odwodnienie hipernatremiczne (uzupełniaj 48 h)'],['num','stools','Wodniste stolce od ostatniej oceny','×',0],['num','vom','Wymioty od ostatniej oceny','×',0]],
+ run(v,p){const r=mk();if(!needW(p,r))return r;let pct=num(v.pct);const wp=num(v.wPrev);let how='wpisane w kalkulatorze';
+  if(!Number.isFinite(pct)&&Number.isFinite(p.dehyd)){pct=p.dehyd;how=`z panelu pacjenta: ${DEHN[p.dehydG]}`}
+  if(!Number.isFinite(pct)&&!(wp>p.w)){r.m('info','Wybierz stopień odwodnienia w panelu „Pacjent” albo wpisz % / masę sprzed choroby.');r.f('Niemowlęta: lekkie 5%, umiarkowane 10%, ciężkie 15%\nStarsze dzieci i dorośli: 3% / 6% / 9%');return r}
+  if(wp>p.w){pct=(wp-p.w)/wp*100;how='z masy sprzed choroby (metoda referencyjna)'}
+  if(p.shock==='hipo'||p.shock==='nieokr'){r.m('stop',`Wstrząs ${SHOCK[p.shock].n}: najpierw bolus ${p.grp==='adult'?'500 ml':f(10*p.w)+' ml (10 ml/kg)'} izotonicznego krystaloidu, ocena po każdym; dopiero potem deficyt.`);
+   if(p.grp!=='adult'&&pct<10){pct=10;how='wstrząs → przyjęto deficyt 10% (NICE)'}}
+  else if(p.shock)r.m('warn',`Wstrząs ${SHOCK[p.shock].n} — leczenie wstrząsu ma pierwszeństwo przed uzupełnianiem deficytu.`);
+  if(!(pct>=0&&pct<=20)){r.m('stop','Stopień odwodnienia 0–20%.');return r}
+  const def=pct*p.w*10;const kid=p.grp==='kid'||p.grp==='neo';const maint=kid?F.hsD(p.w):27.5*p.w;const hrs=v.hyperNa?48:24;
+  const tot=def+maint*hrs/24;const losses=(num(v.stools)||0)*10*p.w+(num(v.vom)||0)*2*p.w;
+  r.o('Odwodnienie',f(pct,1)+' %',how).o('Deficyt',f(def)+' ml',`${f(pct,1)}% × ${f(p.w,1)} kg × 10`).o(`Podtrzymanie na ${hrs} h`,f(maint*hrs/24)+' ml',kid?'Holliday-Segar':'ok. 27,5 ml/kg/d')
+   .o(`Łącznie przez ${hrs} h`,f(tot)+' ml',f(tot/hrs,1)+' ml/h',true);
+  if(losses>0)r.o('Dodaj straty bieżące',f(losses)+' ml','10 ml/kg/stolec, 2 ml/kg/wymioty');
+  r.val={def,maint,tot,rate:tot/hrs};
+  if(kid)r.o('ORS (nawadnianie doustne)',`${f(50*p.w)}–${f(100*p.w)} ml`,'50–100 ml/kg w 2–4 h; NICE: 50 ml/kg + podtrzymanie w 4 h; małe porcje 5 ml co 1–2 min');
+  r.m('info','Pierwszy wybór przy odwodnieniu lekkim i umiarkowanym: ORS (doustnie lub przez zgłębnik), dopiero potem i.v.');
+  r.m('info','Wstrząs: najpierw bolus (dziecko 10 ml/kg 0,9% NaCl / zbilansowany, dorosły 500 ml), ocena po każdym. Bolusów nie odejmuj od deficytu.');
+  if(v.hyperNa)r.m('warn','Hipernatremia: spadek Na⁺ ≤0,5 mmol/l/h, kontrola Na⁺ co 4–6 h.');
+  r.m('stop','Płyny hipotoniczne do nawadniania i.v. — przeciwwskazane.');
+  r.f('Deficyt (ml) = % odwodnienia × masa (kg) × 10\nNiemowlęta: lekkie <5%, umiarkowane 5–10%, ciężkie >10%\nStarsze dzieci i dorośli: 3% / 6% / 9%\n% = (masa przed − masa obecna) ÷ masa przed × 100').s('nice84','cdc','nice29');
+  return r}},
+/* 3 */{id:'sepsa-dorosly',cat:'wst',t:'Sepsa — bolus u dorosłych',d:'30 ml/kg w 3 h, masa skorygowana przy BMI >30',
+ inp:[['sel','basis','Masa do obliczeń',[['auto','automatycznie'],['act','rzeczywista'],['ibw','należna (IBW)'],['adj','skorygowana']],'auto']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;if(p.grp!=='adult')r.m('warn','Pacjent pediatryczny — użyj „Wstrząs — bolusy u dzieci”.');
+  if(p.shock==='kard')r.m('stop','Wstrząs kardiogenny: 30 ml/kg PRZECIWWSKAZANE — użyj „Wstrząs kardiogenny — test obciążenia”.');
+  if(p.shock==='krw')r.m('stop','Wstrząs krwotoczny: ten schemat nie dotyczy — użyj „Wstrząs krwotoczny (uraz)” i „Przetoczenie składników krwi”.');
+  if(p.shock==='obt')r.m('warn','Wstrząs obturacyjny: usuń przeszkodę; płyny tylko małymi porcjami (250 ml).');
+  if(p.shock==='anaf')r.m('warn','Anafilaksja: adrenalina i.m. przede wszystkim; bolusy 500–1000 ml krystaloidu wg odpowiedzi (nie schemat 30 ml/kg).');
+  const obese=p.bmi>30;let b=v.basis||'auto';if(b==='auto')b=obese&&Number.isFinite(p.ibw)?'adj':'act';
+  if((b==='ibw'||b==='adj')&&!Number.isFinite(p.ibw)){r.m('stop','Do IBW potrzebny wzrost (panel „Pacjent”).');return r}
+  const adj=Number.isFinite(p.ibw)?F.adj(p.ibw,p.w):NaN;const wb=b==='ibw'?p.ibw:b==='adj'?adj:p.w;
+  const vol=30*wb;const por=(p.f.hf||p.f.ckd||p.elderly)?250:500;
+  r.o('Objętość docelowa',f(vol)+' ml',`30 ml/kg × ${f(wb,1)} kg (${b==='ibw'?'IBW':b==='adj'?'masa skorygowana':'masa rzeczywista'})`,true)
+   .o('Czas','≤3 h',`średnio ≥${f(vol/3)} ml/h`).o('Porcje',`${Math.ceil(vol/por)} × ${por} ml`,'ocena po każdej porcji');
+  if(obese&&Number.isFinite(p.ibw))r.o('Porównanie BMI >30',`IBW ${f(30*p.ibw)} ml · skoryg. ${f(30*adj)} ml`,`BMI ${f(p.bmi,1)}`);
+  r.val={vol,ibwVol:30*p.ibw,adjVol:30*adj};
+  r.m('info','Płyn: zbilansowany krystaloid (Optilyte/PWE, Sterofundin ISO, Ringer z mleczanami). Klasyczny „Płyn Ringera” NIE jest zbilansowany.');
+  r.m('info',`Cel MAP ≥65 mmHg${p.elderly?' (≥65 lat: SSC 2026 sugeruje 60–65 mmHg)':''}. Noradrenalina może iść obwodowo, nie czekaj na dostęp centralny.`);
+  r.m('warn','Po 30 ml/kg nie podawaj automatycznie kolejnych 30 ml/kg — oceń płynowrażliwość (PLR, POCUS) i rozważ wazopresor.');
+  if(p.f.hf||p.f.ckd)r.m('warn','Niewydolność serca / nerek: porcje 250 ml i ocena płynowrażliwości przed każdą kolejną.');
+  r.m('stop','HES — pozwolenia zawieszone w UE (2022). Żelatyny — nie zalecane. Albumina dopiero po dużych objętościach krystaloidów.');
+  r.f('Objętość = 30 ml/kg (rekomendacja słaba, niska pewność dowodów)\nBMI >30: IBW lub masa skorygowana = IBW + 0,4 × (masa − IBW)').s('ssc21','ssc26','devine');
+  return r}},
+/* 4 */{id:'sepsa-dziecko',cat:'wst',t:'Wstrząs — bolusy u dzieci',d:'10 ml/kg, licznik ml/kg w 1. godzinie',
+ inp:[['sel','mode','Schemat',[['auto','automatycznie (wg rodzaju wstrząsu)'],['erc','ERC 2025: 10 ml/kg'],['ssc','SSC: 20 ml/kg'],['cardio','przyczyna kardiogenna: 5 ml/kg']],'auto'],['chk','hypot','Hipotensja'],['num','given','Podano dotąd w 1. godzinie','ml',0]],
+ run(v,p){const r=mk();if(!needW(p,r))return r;if(p.grp==='adult')r.m('info','Pacjent dorosły — użyj „Sepsa — bolus u dorosłych”.');
+  const md=v.mode==='auto'||!v.mode?((p.shock==='kard'||p.shock==='obt')?'cardio':'erc'):v.mode;const per=md==='ssc'?20:md==='cardio'?5:10;
+  if((v.mode==='auto'||!v.mode)&&md==='cardio')r.m('warn',`Wstrząs ${SHOCK[p.shock].n}: bolus zmniejszony do 5 ml/kg, powoli, ocena po każdym.`);
+  if(p.shock==='krw')r.m('stop','Wstrząs krwotoczny: krystaloid maks. 20 ml/kg, potem krew — zob. „Przetoczenie składników krwi”.');
+  if(p.grp!=='adult'&&!p.shock)r.m('info','Ustaw rodzaj wstrząsu w panelu „Pacjent” — kalkulator dobierze schemat bolusa.');let bol=per*p.w;let capped=false;if(bol>500){bol=500;capped=true}
+  const g=num(v.given)||0;const gk=g/p.w;
+  r.o('Bolus',f(bol)+' ml',`${per} ml/kg w 5–10 min${capped?' · przycięto do 500 ml (nastolatki)':''}`,true).o('Podano w 1. godzinie',f(gk,1)+' ml/kg',f(g)+' ml').o('Limit 1. godziny',`${f(40*p.w)}–${f(60*p.w)} ml`,'40–60 ml/kg');
+  r.val={bol,gk};
+  r.act.push({l:'+ Podano ten bolus',fn:()=>{V[this.id].given=String(g+bol)}},{l:'Zeruj licznik',fn:()=>{V[this.id].given='0'},sec:true});
+  if(p.f.icu&&!v.hypot)r.m('stop','Brak dostępu do OIT i brak hipotensji: nie podawaj bolusów (FEAST). Tylko płyny podtrzymujące.');
+  if(p.f.icu&&v.hypot)r.m('warn','Brak OIT + hipotensja: bolusy łącznie do 40 ml/kg.');
+  if(gk>=60)r.m('stop','≥60 ml/kg w 1. godzinie — przerwij bolusy, leki wazoaktywne, wsparcie oddechu, konsultacja OIT.');
+  else if(gk>=40)r.m('warn','≥40 ml/kg — rozważ leki wazoaktywne (adrenalina/noradrenalina) i wsparcie oddechu.');
+  if(p.f.malnut)r.m('stop','Ciężkie niedożywienie: standardowe bolusy są niebezpieczne — protokół WHO, konsultacja.');
+  r.m('info','Po każdym bolusie: HR, CRT, ciśnienie, mleczan, diureza, trzeszczenia, hepatomegalia, SpO₂, POCUS (linie B). Narastanie wątroby lub trzeszczeń = STOP.');
+  r.m('info','Płyn: zbilansowany krystaloid. 0,9% NaCl preferowany przy hiponatremii, podejrzeniu ↑ ICP/zakażenia OUN, DKA, ciężkim TBI.');
+  r.f('ERC 2025: 10 ml/kg, powtarzaj do 40–60 ml/kg w 1. godz.\nSSC (z OIT): 10–20 ml/kg, do 40–60 ml/kg\nPrzyczyna kardiogenna: ok. 5 ml/kg · maks. 500 ml na bolus').s('erc25','sscKid');
+  return r}},
+/* 5 */{id:'uraz',cat:'wst',t:'Wstrząs krwotoczny (uraz)',d:'ATLS 10, hipotensja permisywna, preparaty krwi',inp:[],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const kid=p.grp!=='adult'&&p.w<40;if(p.shock&&p.shock!=='krw')r.m('warn',`W panelu ustawiono wstrząs ${SHOCK[p.shock].n} — upewnij się, że to wstrząs krwotoczny.`);
+  if(kid){r.o('Krystaloid',f(20*p.w)+' ml','20 ml/kg ciepłego płynu — maksymalnie, potem krew',true).o('KKCz / osocze / płytki',`porcje ${f(10*p.w)}–${f(20*p.w)} ml`,'10–20 ml/kg, proporcja 1:1:1');r.val={cryst:20*p.w}}
+  else{r.o('Krystaloid',f(1000)+' ml','1 l ciepłego płynu zbilansowanego (dzieci ≥40 kg: 20 ml/kg)',true).o('Masywne krwawienie','KKCz : FFP : KKP 1:1:1','wcześnie, bez czekania na wyniki');r.val={cryst:1000}}
+  if(p.f.tbi)r.m('stop','TBI / uraz rdzenia: hipotensja permisywna PRZECIWWSKAZANA. MAP ≥80 mmHg. Płyn: 0,9% NaCl (bez Ringera z mleczanami i 5% glukozy).');
+  else r.m('info','Hipotensja permisywna do opanowania krwawienia: SBP 80–90 mmHg (MAP 50–60), jeśli brak TBI i urazu rdzenia.');
+  r.m('info','Kwas traneksamowy w ciągu 3 h od urazu — dawka w module leków.');
+  r.m('warn','Ograniczaj krystaloidy: rozcieńczenie, kwasica, hipotermia. Ogrzewaj płyny i pacjenta.');
+  r.f('ATLS 10: początkowo 1 l krystaloidu (dzieci <40 kg: 20 ml/kg)\nWytyczne europejskie 2023: restrykcyjna podaż, wczesne preparaty krwi').s('atls','rossaint','erc25');
+  return r}},
+/* 6 */{id:'kardiogenny',cat:'wst',t:'Wstrząs kardiogenny — test obciążenia',d:'Mała porcja i ocena',inp:[],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const kid=p.grp!=='adult';
+  if(p.shock==='obt')r.m('stop','Wstrząs obturacyjny: priorytet to usunięcie przeszkody (odma prężna, tamponada, zator) — płyny tylko jako pomost.');
+  r.o('Porcja testowa',kid?f(5*p.w)+' ml':'200–250 ml',kid?'5 ml/kg, powoli':'w 15–30 min, tylko bez cech przewodnienia',true);r.val={};
+  r.m('warn','Wstrząs kardiogenny: płyny tylko jako test obciążenia. Leczenie przyczynowe, inotropy/wazopresory.');
+  r.m('stop','Nie stosuj 30 ml/kg. Obrzęk płuc, linie B, ↑ JVP, SpO₂ ↓ → STOP płynom.');
+  r.f('Dorośli ≥200–250 ml w 15–30 min → ponowna ocena · dzieci ok. 5 ml/kg').s('escHf','erc25');return r}},
+/* 7 */{id:'tbsa',cat:'opa',t:'TBSA — Lund-Browder',d:'Pomocnik powierzchni oparzenia z korektą wieku',inp:'lb',
+ run(v,p){const r=mk();const a=p.ageY;if(!Number.isFinite(a)){r.m('info','Podaj wiek pacjenta.');return r}
+  const t=LBtot(v,a);r.o('Oparzenie (II° i III°)',f(t,2)+' % TBSA',`kolumna tabeli: ${LBband(a).n}`,true);r.val={tbsa:t};
+  r.act.push({l:'Użyj w kalkulatorze oparzeń',fn:()=>{V['oparzenia']=Object.assign(defaults(CALCS.find(x=>x.id==='oparzenia')),V['oparzenia']||{},{tbsa:String(Math.round(t*10)/10)});go('oparzenia')}});
+  r.m('info','Licz tylko oparzenia II° i III°. Rumień (I°) się nie liczy. Dłoń pacjenta z palcami ≈ 1% TBSA.');
+  r.f('Dorośli — reguła dziewiątek: głowa 9, każda kończyna górna 9, przód tułowia 18, tył 18, każda kończyna dolna 18, krocze 1.').s('lund');return r}},
+/* 8 */{id:'oparzenia',cat:'opa',t:'Resuscytacja w oparzeniach',d:'ABA 2023 / ABLS, czas od oparzenia, diureza',
+ inp:[['num','tbsa','TBSA (II° + III°)','%',''],['sel','frm','Wzór',[['auto','automatycznie (ABA 2023 / ABLS)'],['elec','porażenie prądem wys. napięcia: 4 ml'],['park','Parkland 4 ml (górna granica)']],'auto'],['num','hs','Czas od oparzenia','h',0],['num','given','Już podano od oparzenia','ml',0],['num','uo','Diureza w ostatniej godzinie (opcjonalnie)','ml/h','']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const t=num(v.tbsa);
+  const kid=(Number.isFinite(p.ageY)&&p.ageY<14)||p.w<=30;
+  const startRate=!Number.isFinite(p.ageY)?null:p.ageY<=5?125:p.ageY<14?250:500;
+  if(!Number.isFinite(t)){r.m('info',`Wpisz TBSA. Do czasu obliczenia TBSA (ABLS) tempo startowe: ${startRate?startRate+' ml/h':'≤5 lat 125, 6–13 lat 250, ≥14 lat 500 ml/h'}.`);return r}
+  if(t<0||t>100){r.m('stop','TBSA 0–100%.');return r}
+  const fac=v.frm==='elec'||v.frm==='park'?4:kid?3:2;const tot=fac*p.w*t;const hs=num(v.hs)||0,g=num(v.given)||0;
+  if(hs<0||hs>=24){r.m('stop','Czas od oparzenia 0–23 h.');return r}
+  let r1,r2;if(hs<8){r1=(tot/2-g)/(8-hs);r2=tot/2/16}else{r1=null;r2=(tot-g)/(24-hs)}
+  const maint=(kid&&p.w<30)?F.hs421(p.w):0;
+  r.o('Płyn na 24 h od oparzenia',f(tot)+' ml',`${fac} ml × ${f(p.w,1)} kg × ${f(t,1)}%`,true);
+  if(r1!==null)r.o(`Do 8. godziny (${f(8-hs,1)} h)`,f(Math.max(r1,0)+maint,1)+' ml/h',maint?`${f(Math.max(r1,0),1)} ml/h resuscytacja + ${f(maint,1)} ml/h podtrzymanie z glukozą`:'połowa objętości minus już podane');
+  r.o(hs<8?'Godziny 8–24':`Do 24. godziny (${f(24-hs,1)} h)`,f(r2+maint,1)+' ml/h',maint?`${f(r2,1)} + ${f(maint,1)} ml/h podtrzymanie`:'');
+  r.val={tot,r1:r1===null?null:r1+maint,r1res:r1,r2,maint};
+  if(p.shock&&hs<6)r.m('stop','Wstrząs w pierwszych godzinach po oparzeniu rzadko wynika z samego oparzenia — szukaj krwawienia, urazu, zatrucia (CO, cyjanki).');
+  if(r1!==null&&r1<0)r.m('warn','Podano już więcej niż połowę objętości na pierwsze 8 h — miareczkuj według diurezy.');
+  if(!kid&&t<20)r.m('info','Dorośli <20% TBSA: zwykle bez formalnej resuscytacji (rozważ podtrzymanie/doustnie).');
+  if(kid&&t<10)r.m('info','Dzieci <10–15% TBSA: zwykle bez formalnej resuscytacji (wg ośrodka).');
+  // porównania
+  const cmp=[`Parkland 4 ml: ${f(4*p.w*t)} ml`];if(!kid&&p.w>=40)cmp.push(`Rule of Tens: ${f(F.rot(t,p.w))} ml/h`);
+  if(kid&&p.h>0){const b=F.bsa(p.w,p.h);cmp.push(`Galveston: ${f(F.galv(b,t))} ml/24 h (BSA ${f(b,2)} m²)`)}
+  r.o('Porównanie wzorów','',cmp.join(' · ')+' — Parkland to dziś górna granica, nie punkt startowy');
+  // diureza
+  const lo=v.frm==='elec'?(kid?1:75/p.w):kid?1:0.5,hi=v.frm==='elec'?(kid?1.5:100/p.w):kid?1.5:1.0;
+  r.o('Cel diurezy',v.frm==='elec'&&!kid?'75–100 ml/h':`${f(lo*p.w)}–${f(hi*p.w)} ml/h`,v.frm==='elec'?'mioglobinuria: do oczyszczenia moczu':`${f(lo,1)}–${f(hi,1)} ml/kg/h`);
+  const uo=num(v.uo);const cur=r1!==null?r1:r2;
+  if(Number.isFinite(uo)){if(uo<lo*p.w)r.m('warn',`Diureza poniżej celu → zwiększ tempo o ⅓: ok. ${f(cur*4/3)} ml/h (+ podtrzymanie).`);
+   else if(uo>hi*p.w)r.m('warn',`Diureza powyżej celu → zmniejsz tempo o ⅓: ok. ${f(cur*2/3)} ml/h.`);else r.m('ok','Diureza w zakresie docelowym — utrzymaj tempo.')}
+  const ml_kg_t=g/(p.w*t),ml_kg=g/p.w;
+  if(ml_kg_t>=6||ml_kg>=250)r.m('stop',`Resuscytacja nadmierna: ${f(ml_kg_t,1)} ml/kg/%TBSA, ${f(ml_kg)} ml/kg — rozważ albuminę, ryzyko zespołu przedziału brzusznego.`);
+  r.m('info','Czas liczy się od chwili oparzenia, nie od przyjęcia. Płyn: Ringer z mleczanami lub zbilansowany krystaloid.');
+  if(kid&&p.w<30)r.m('info','Dzieci <30 kg: dodaj płyny podtrzymujące z glukozą (ryzyko hipoglikemii).');
+  r.f(`ABA 2023 dorośli: start 2 ml/kg/%TBSA · ABLS dzieci (<14 lat lub ≤30 kg): 3 ml/kg/%TBSA + podtrzymanie\nPorażenie prądem wysokiego napięcia: 4 ml/kg/%TBSA\n½ objętości w 8 h od oparzenia, ½ w kolejnych 16 h\nAlarm: ≥6 ml/kg/%TBSA lub ≥250 ml/kg/24 h (indeks Ivy)\nKorekta co godzinę o ±⅓ wg diurezy`).s('aba23','abls','rot','galv');
+  return r}},
+/* 9 */{id:'hiponatremia',cat:'na',t:'Hiponatremia',d:'3% NaCl, Adrogué-Madias, limity korekty',
+ inp:[['num','na','Na⁺ aktualne','mmol/l',''],['sel','sym','Objawy',[['sev','ciężkie (drgawki, śpiączka, wymioty, zab. krążeniowo-oddechowe)'],['mod','umiarkowane (nudności, splątanie, ból głowy)'],['none','brak / łagodne']],'sev'],['sel','reg','Schemat bolusa (dorośli)',[['eu','Europa 2014: 150 ml / 20 min'],['us','USA: 100 ml / 10 min']],'eu'],['chk','ods','Wysokie ryzyko ODS (alkohol, niedożywienie, hipokaliemia, marskość, Na⁺ ≤105)'],['sel','fl','Płyn do obliczeń Adrogué-Madias',Object.keys(FLUIDS).map(k=>[k,FLUIDS[k].n]),'nacl3'],['num','vol','Planowana objętość','ml',150],['num','na0','Na⁺ na początku leczenia (do 24 h temu)','mmol/l','']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const na=num(v.na);if(!needNa(na,r))return r;
+  if(!Number.isFinite(p.ageY)){r.m('info','Podaj wiek (współczynnik TBW).');return r}
+  const fac=F.tbwF(p.sex,p.ageY),tbw=fac*p.w;const fl=FLUIDS[v.fl]||FLUIDS.nacl3;const per=F.adr(fl.na,fl.k,na,tbw);const vol=num(v.vol)||0;
+  const kid=p.grp!=='adult';const lim=v.ods?8:10;
+  if(v.sym!=='none'){if(kid)r.o('Bolus 3% NaCl',f(Math.min(2*p.w,100))+' ml','2 ml/kg (maks. 100 ml) w 10–15 min, do 3 razy',true);
+   else r.o('Bolus 3% NaCl',v.reg==='us'?'100 ml':'150 ml',v.reg==='us'?'w 10 min, do 3 razy':(v.sym==='sev'?'w 20 min, kontrola Na⁺ po 20 min, łącznie do 3 bolusów':'jednorazowo w 20 min'),true);
+   r.m('info','Cel: wzrost Na⁺ o 5 mmol/l albo ustąpienie objawów — potem stop bolusów.')}
+  else r.m('info','Bez objawów: leczenie przyczynowe; 3% NaCl zwykle niewskazany.');
+  r.o('TBW',f(tbw,1)+' l',`${f(fac,2)} × ${f(p.w,1)} kg`).o(`Zmiana Na⁺ po 1 l (${fl.n})`,(per>=0?'+':'')+f(per,2)+' mmol/l').o(`Po ${f(vol)} ml`,(per>=0?'+':'')+f(per*vol/1000,2)+' mmol/l','szacunek — nie uwzględnia diurezy wodnej');
+  r.o('Maks. korekta w 24 h',`+${lim} mmol/l → Na⁺ ≤${f(na+lim)}`,v.ods?'wysokie ryzyko ODS: 8 mmol/l':'10 mmol/l w 1. dobie, 8 w kolejnych');
+  const def=tbw*lim;r.o(`Deficyt Na⁺ dla +${lim} mmol/l`,f(def)+' mmol',`= ${f(def/513*1000)} ml 3% NaCl / 24 h (planowanie)`);
+  r.val={tbw,per,dVol:per*vol/1000,def,vol3:def/513*1000};
+  const na0=num(v.na0);if(Number.isFinite(na0)){const d=na-na0;r.o('Zmiana od początku leczenia',(d>=0?'+':'')+f(d,1)+' mmol/l');r.val.delta=d;
+   if(d>lim)r.m('stop',`Przekroczony limit korekty (+${f(d,1)} > ${lim}) — rozważ relowering: 5% glukoza 10 ml/kg ± desmopresyna, konsultacja.`);
+   else if(d>=lim-2)r.m('warn','Zbliżasz się do limitu korekty — wstrzymaj hipertoniczne płyny, kontrola Na⁺ co 2 h.');
+   else r.m('ok','Tempo korekty w granicach limitu.')}
+  r.m('warn','Diureza >100 ml/h po ustąpieniu bodźca ADH (hipowolemia, tiazydy, desmopresyna, ból) → ryzyko nadmiernej korekty.');
+  r.f('ΔNa⁺ na 1 l = [(Na⁺ płynu + K⁺ płynu) − Na⁺ surowicy] ÷ (TBW + 1)\nTBW: dzieci 0,6 · mężczyźni 0,6 · kobiety 0,5 · starsi mężczyźni 0,5 · starsze kobiety 0,45').s('spas','adrHypo');
+  return r}},
+/* 10 */{id:'hipernatremia',cat:'na',t:'Hipernatremia',d:'Deficyt wolnej wody i tempo',
+ inp:[['num','na','Na⁺ aktualne','mmol/l',''],['sel','on','Czas trwania',[['chr','przewlekła / nieznany'],['ac','ostra (godziny)']],'chr'],['sel','fl','Płyn',[['g5','5% glukoza'],['nacl045','0,45% NaCl'],['rl','Ringer z mleczanami']],'g5'],['num','loss','Straty bieżące','ml/24 h',0]],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const na=num(v.na);if(!needNa(na,r))return r;if(na<=145){r.m('info','Na⁺ ≤145 mmol/l — brak hipernatremii.');return r}
+  if(!Number.isFinite(p.ageY)){r.m('info','Podaj wiek.');return r}
+  const tbw=F.tbwF(p.sex,p.ageY)*p.w;const dww=F.fwd(tbw,na);const fl=FLUIDS[v.fl];const per=F.adr(fl.na,fl.k,na,tbw);
+  const kid=p.grp!=='adult';let drop,hrs;
+  if(kid){drop=Math.min(na-145,12);hrs=24}else if(v.on==='ac'){drop=Math.min(na-145,24);hrs=24}else{drop=Math.min(na-145,10);hrs=24}
+  const L=drop/Math.abs(per);const loss=num(v.loss)||0;
+  r.o('Deficyt wolnej wody',f(dww,2)+' l',`TBW ${f(tbw,1)} l × (Na⁺/140 − 1)`,true).o(`Zmiana Na⁺ po 1 l (${fl.n})`,f(per,2)+' mmol/l')
+   .o(`Cel na 24 h: −${f(drop)} mmol/l`,f(L,2)+' l płynu',`+ straty ${f(loss)} ml → ${f((L*1000+loss)/hrs)} ml/h`);
+  r.val={tbw,dww,per,L};
+  if(kid)r.m('warn','Dzieci: spadek ≤0,5 mmol/l/h, deficyt uzupełniaj przez 48 h, Na⁺ co 4–6 h.');
+  else if(v.on==='ac')r.m('info','Ostra (godziny): ok. 1 mmol/l/h do ~145 mmol/l.');
+  else r.m('info','Przewlekła/nieznana: ≤0,5 mmol/l/h, cel ok. 10 mmol/l na dobę. Limit opiera się na opinii ekspertów (Chauhan 2019 — brak ↑ śmiertelności przy szybszej korekcie u dorosłych).');
+  r.m('info','Dodaj straty niewyczuwalne: dorośli ok. 1–1,5 l/d.');
+  r.f('DWW (l) = TBW × (Na⁺ ÷ 140 − 1)\nΔNa⁺ na 1 l płynu = (Na⁺ płynu + K⁺ płynu − Na⁺ surowicy) ÷ (TBW + 1)').s('adrHyper','chauhan','nice29');
+  return r}},
+/* 11 */{id:'sod-skorygowany',cat:'na',t:'Sód skorygowany o glukozę',d:'Katz 1,6 i Hillier 2,4',inp:[['num','na','Na⁺ zmierzone','mmol/l',''],...GLU()],
+ run(v,p){const r=mk();const na=num(v.na),g=num(v.glu);if(!needNa(na,r))return r;if(!Number.isFinite(g)){r.m('info','Wpisz glukozę.');return r}
+  const gm=F.toMgdl(g,v.gluU);const k=F.katz(na,gm),h=F.hill(na,gm);
+  r.o('Katz (1,6)',f(k,1)+' mmol/l','',true).o('Hillier (2,4)',f(h,1)+' mmol/l','trafniejszy przy glikemii >400 mg/dl').o('Glukoza',f(gm)+' mg/dl',f(gm/18.016,1)+' mmol/l');
+  r.val={k,h};r.m('info','Temat sporny — pokazujemy oba wyniki. Sód skorygowany rośnie w trakcie leczenia DKA/HHS: to oczekiwane.');
+  r.f('Na⁺kor = Na⁺ + 1,6 (lub 2,4) × (glukoza [mg/dl] − 100) ÷ 100').s('katz','hill');return r}},
+/* 12 */{id:'nacl3',cat:'na',t:'Przygotowanie 3% NaCl',d:'Z 0,9% NaCl i 10% NaCl',inp:[['num','V','Objętość 0,9% NaCl w worku','ml',250]],
+ run(v,p){const r=mk();const V0=num(v.V);if(!(V0>0&&V0<=1000)){r.m('stop','Objętość 1–1000 ml.');return r}
+  const x=F.prep3(V0);r.o('Dodaj 10% NaCl',f(x,1)+' ml','',true).o('Objętość końcowa',f(V0+x)+' ml','roztwór ok. 3,0%');r.val={x};
+  r.m('warn','Worki mają nadlew objętości — wynik przybliżony. Preferuj roztwór z apteki lub wg procedury szpitalnej. Oznacz worek wyraźnie.');
+  r.f('x = V × (513 − 154) ÷ (1711 − 513)\nPrzykłady: 100 ml + 30 ml · 250 ml + 75 ml · 500 ml + 150 ml\n10% NaCl = 1711 mmol/l Na⁺ · 3% NaCl = 513 mmol/l').s('chpl');return r}},
+/* 13 */{id:'osmolalnosc',cat:'na',t:'Osmolalność i luka osmolalna',d:'Mocznik w mg/dl (PL) lub BUN',
+ inp:[['num','na','Na⁺','mmol/l',''],...GLU(),['sel','ut','Rodzaj wyniku',[['mg','mocznik mg/dl (polskie laboratoria)'],['mmol','mocznik mmol/l'],['bun','BUN mg/dl']],'mg'],['num','u','Mocznik / BUN','',''],['num','etoh','Etanol (opcjonalnie)','mg/dl',''],['num','meas','Osmolalność zmierzona (opcjonalnie)','mOsm/kg','']],
+ run(v,p){const r=mk();const na=num(v.na),g=num(v.glu),u=num(v.u);if(!needNa(na,r))return r;if(!Number.isFinite(g)||!Number.isFinite(u)){r.m('info','Wpisz glukozę i mocznik.');return r}
+  const gm=F.toMmol(g,v.gluU),um=F.ureaMmol(u,v.ut);const et=num(v.etoh)||0;const calc=F.osm(na,gm,um)+et/3.7;const eff=2*na+gm;
+  r.o('Osmolalność obliczona',f(calc,1)+' mOsm/kg',et?`w tym etanol ${f(et/3.7,1)}`:'',true).o('Osmolalność efektywna (toniczność)',f(eff,1)+' mOsm/kg','HHS: >300').o('Mocznik',f(um,1)+' mmol/l');
+  r.val={calc,eff,um};const m=num(v.meas);
+  if(Number.isFinite(m)){const gap=m-calc;r.o('Luka osmolalna',f(gap,1),'norma <10');r.val.gap=gap;if(gap>10)r.m('warn','Luka >10 — podejrzenie alkoholi toksycznych (metanol, glikol etylenowy).')}
+  if(v.ut==='bun')r.m('info','BUN ÷ 2,8 = mmol/l. W Polsce laboratoria zwykle podają mocznik (÷ 6,0).');
+  r.f('Osm = 2 × Na⁺ + glukoza + mocznik (mmol/l)\nmocznik mg/dl ÷ 6,0 · BUN mg/dl ÷ 2,8 · glukoza mg/dl ÷ 18 · etanol mg/dl ÷ 3,7').s('ada24');return r}},
+/* 14 */{id:'dka-dorosly',cat:'dka',t:'DKA / HHS — dorośli',d:'Konsensus 2024 + JBDS',
+ inp:[['sel','typ','Rozpoznanie',[['dka','DKA'],['eu','DKA euglikemiczna (np. SGLT2i)'],['hhs','HHS']],'dka'],...GLU('glu','Glukoza aktualna'),['num','k','K⁺','mmol/l','']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;if(p.grp!=='adult')r.m('stop','Pacjent pediatryczny — użyj „DKA — dzieci”.');
+  const risk=p.f.hf||p.f.ckd||p.elderly;const hhs=v.typ==='hhs';const ins=(hhs?0.05:0.1)*p.w;
+  r.o('Płyny',risk?'bolusy po 250 ml':'1000 ml w 1. godz.',risk?'starszy / niewydolność serca lub nerek — ocena po każdym':'potem 500–1000 ml/h przez 2–4 h; zbilansowany krystaloid',true)
+   .o('Insulina i.v. (50 j./50 ml)',f(ins,1)+' j./h',`= ${f(ins,1)} ml/h · ${hhs?'0,05':'0,1'} j./kg/h (FRIII)`,true);
+  r.val={ins,insRed:0.05*p.w};
+  if(!hhs)r.o('Po spadku glikemii <14 mmol/l (252 mg/dl)',f(0.05*p.w,1)+' j./h','JBDS: 0,05 j./kg/h');
+  const g=num(v.glu);if(Number.isFinite(g)){const gm=F.toMgdl(g,v.gluU);
+   if(v.typ==='eu'||gm<250)r.m('warn','Dodaj glukozę 5–10% do płynów (glikemia <250 mg/dl lub DKA euglikemiczna) — nie przerywaj insuliny.');
+   else r.m('info','Glukozę 5–10% dodaj, gdy glikemia spadnie <250 mg/dl (13,9 mmol/l).')}
+  const k=num(v.k);if(Number.isFinite(k)){if(k<3.5)r.m('stop','K⁺ <3,5 mmol/l: WSTRZYMAJ insulinę, najpierw uzupełnij potas.');
+   else if(k<=5.5)r.m('info','K⁺ 3,5–5,5: dodaj KCl 40 mmol/l do płynów (ADA ≤5,0; JBDS ≤5,5).');else r.m('info','K⁺ >5,5: bez potasu, kontrola co 2 h.')}
+  else r.m('info','Wpisz K⁺ — od niego zależy start insuliny.');
+  if(hhs)r.m('warn','HHS: spadek glikemii ≤90–120 mg/dl/h, osmolalności 3–8 mOsm/kg/h. Istotna ketonemia → postępuj jak w DKA.');
+  r.m('info','Kontynuuj insulinę bazalną s.c. Bolus insuliny tylko przy opóźnionym dostępie i.v.');
+  r.m('info','Ustąpienie DKA: pH >7,3 lub HCO₃⁻ ≥18 i ketony <0,6 mmol/l. HHS: osmolalność <300 i diureza >0,5 ml/kg/h.');
+  r.f('Płyny 500–1000 ml/h przez 2–4 h; 50% deficytu w 8–12 h\nInsulina FRIII 0,1 j./kg/h (HHS 0,05) · K⁺ 40 mmol/l przy 3,5–5,0/5,5').s('ada24','jbds');return r}},
+/* 15 */{id:'dka-dziecko',cat:'dka',t:'DKA — dzieci',d:'ISPAD 2022 lub BSPED',
+ inp:[['sel','prot','Protokół',[['bsped','BSPED (Wielka Brytania)'],['ispad','ISPAD 2022']],'bsped'],['num','ph','pH','',''],['chk','shock','Wstrząs'],['num','bolus','Podany bolus','ml',''],['sel','def','Deficyt (ISPAD)',[['auto','z panelu pacjenta (domyślnie 7%)'],['5','5%'],['7','7%'],['10','10%']],'auto'],['sel','hrs','Czas uzupełniania (ISPAD)',[['48','48 h'],['36','36 h'],['24','24 h']],'48'],['sel','ins','Insulina',[['0.05','0,05 j./kg/h'],['0.1','0,1 j./kg/h']],'0.05']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;if(p.grp==='adult')r.m('warn','Pacjent dorosły — użyj „DKA / HHS — dorośli”.');
+  const bs=v.prot!=='ispad';const shk=!!v.shock||(!!p.shock&&p.shock!=='kard');if(!v.shock&&shk)r.m('info',`Wstrząs z panelu pacjenta (${SHOCK[p.shock].n}) — liczę jak we wstrząsie.`);const wc=bs?Math.min(p.w,75):p.w;const ph=num(v.ph);
+  let def;if(bs){if(!Number.isFinite(ph)){r.m('info','Wpisz pH (BSPED: deficyt 5% przy pH ≥7,1, 10% przy pH <7,1).');return r}def=ph<7.1?10:5}else{def=v.def==='auto'?(Number.isFinite(p.dehyd)?Math.min(Math.max(p.dehyd,5),10):7):num(v.def)}
+  if(bs&&Number.isFinite(p.dehyd))r.m('info',`BSPED liczy deficyt z pH (${def}%), niezależnie od oceny klinicznej odwodnienia (${f(p.dehyd)}%).`);
+  const hrs=bs?48:num(v.hrs);const b=num(v.bolus);const bol=Number.isFinite(b)?b:(shk?(bs?10:20):10)*p.w;
+  const sub=bs?!shk:true;const defMl=def*wc*10;const rem=defMl-(sub?bol:0);const mH=F.hsD(wc)/24;const rate=rem/hrs+mH;const ins=num(v.ins)*p.w;
+  r.o('Bolus',shk?(bs?`${f(10*p.w)} ml w 5–10 min`:`${f(20*p.w)} ml jak najszybciej`):(bs?`${f(10*p.w)} ml w 30 min`:`${f(10*p.w)}–${f(20*p.w)} ml w 20–30 min`),shk?(bs?'powtarzaj do 40 ml/kg':'20 ml/kg'):'0,9% NaCl lub zbilansowany')
+   .o(`Deficyt ${def}%`,f(defMl)+' ml',`${bs&&p.w>75?'masa ograniczona do 75 kg · ':''}${sub?`minus bolus ${f(bol)} ml = ${f(rem)} ml`:'bolusów we wstrząsie nie odejmuj'}`)
+   .o('Tempo płynów',f(rate,1)+' ml/h',`${f(rem/hrs,1)} deficyt (${hrs} h) + ${f(mH,1)} podtrzymanie`,true)
+   .o('Insulina',f(ins,2)+' j./h',`${String(v.ins).replace('.',',')} j./kg/h — start ≥1 h po rozpoczęciu płynów, bez bolusa`);
+  r.val={defMl,rem,rate,ins,mH};
+  r.m('info','KCl 40 mmol/l w płynie od początku (po wykluczeniu hiperkaliemii i potwierdzeniu diurezy). Glukoza 5% przy glikemii ok. 14–17 mmol/l lub szybkim spadku.');
+  r.m('stop',`Obrzęk mózgu (ból głowy, bradykardia, nadciśnienie, pogorszenie GCS): mannitol 20% ${f(2.5*p.w)}–${f(5*p.w)} ml (0,5–1 g/kg) lub 3% NaCl ${f(2.5*p.w)}–${f(5*p.w)} ml w 10–15 min, zwolnij płyny, OIT.`);
+  r.m('warn','Bez dodatkowych bolusów >20 ml/kg bez ponownej oceny. Ocena neurologiczna co 1 h.');
+  r.f(`Tempo = (deficyt − bolus) ÷ ${hrs} h + podtrzymanie (Holliday-Segar ÷ 24)\nBSPED: deficyt 5% (pH ≥7,1) lub 10% (pH <7,1), maks. 75 kg, 48 h\nISPAD: deficyt 5–10%, 24–48 h, insulina 0,05–0,1 j./kg/h`).s(bs?'bsped':'ispad22',bs?'ispad22':'bsped');return r}},
+/* 16 */{id:'potas',cat:'el',t:'Potas i.v. — bezpieczeństwo',d:'Stężenie, mmol/h, KCl 15%',
+ inp:[['num','mmol','KCl w worku','mmol',40],['num','bag','Objętość worka','ml',1000],['num','rate','Tempo','ml/h',125],['sel','line','Dostęp',[['p','obwodowy'],['c','centralny']],'p'],['chk','ecg','Monitorowanie EKG']],
+ run(v,p){const r=mk();const m=num(v.mmol),b=num(v.bag),rt=num(v.rate);if(!(m>=0&&b>0&&rt>0)){r.m('info','Uzupełnij mmol, objętość i tempo.');return r}
+  const conc=m/b*1000,mh=conc*rt/1000;const kid=p.grp==='kid'||p.grp==='neo';
+  r.o('Stężenie',f(conc,1)+' mmol/l','',true).o('Tempo podaży K⁺',f(mh,2)+' mmol/h','',true).o('KCl 15% do worka',f(m/2,1)+' ml','1 ml = 2 mmol K⁺; amp. 10 ml = 20 mmol');
+  r.val={conc,mh};
+  if(kid&&Number.isFinite(p.w)){const mk2=mh/p.w;r.o('Na kg',f(mk2,3)+' mmol/kg/h',`maks. na oddziale ${f(0.2*p.w,2)}–${f(Math.min(0.25*p.w,10),2)} mmol/h`);r.val.mkg=mk2;
+   if(mk2>0.5||mh>20)r.m('stop','Przekroczone maksimum (>0,5 mmol/kg/h) — zmniejsz tempo.');
+   else if(mk2>0.25||mh>10)r.m('warn','>0,25 mmol/kg/h lub >10 mmol/h — tylko OIT z EKG, dostęp centralny.');
+   if(v.line==='p'&&conc>60)r.m('stop','Dzieci: stężenie obwodowo >60 mmol/l — niedopuszczalne.');else if(v.line==='p'&&conc>40)r.m('warn','Dzieci: stężenie obwodowo >40 mmol/l — rozważ dostęp centralny.');}
+  else{if(v.line==='p'&&conc>40)r.m('stop','ALARM: stężenie obwodowo >40 mmol/l (dorośli) — rozcieńcz lub użyj dostępu centralnego.');
+   if(mh>20)r.m('stop','ALARM: >20 mmol/h — niedopuszczalne poza wyjątkowymi sytuacjami na OIT.');
+   else if(mh>10&&!v.ecg)r.m('stop','>10 mmol/h wymaga monitorowania EKG (preferowany dostęp centralny).');
+   else if(mh>10)r.m('warn','>10 mmol/h — EKG, dostęp centralny, częste oznaczenia K⁺.');
+   else if(conc<=40||v.line==='c')r.m('ok','Stężenie i tempo w granicach standardu.');}
+  r.m('stop','Nigdy bolusem i nigdy nierozcieńczony. KCl ≥40 mmol/l tylko przez pompę infuzyjną.');
+  r.m('info','Orientacyjnie: spadek K⁺ o 1 mmol/l ≈ niedobór 200–400 mmol. Dorośli zwykle ≤150 mmol/d. 1 g KCl = 13,4 mmol.');
+  r.f('Stężenie = mmol ÷ objętość × 1000 · mmol/h = stężenie × ml/h ÷ 1000\nDorośli obwodowo ≤10 mmol/h i ≤40 mmol/l; do 20 mmol/h tylko z EKG\nDzieci ≤0,2–0,25 mmol/kg/h (maks. 10 mmol/h) na oddziale').s('nsw','imsn','chpl');return r}},
+/* 17 */{id:'mg-ca',cat:'el',t:'Magnez i wapń',d:'MgSO₄ 20%, glukonian i chlorek wapnia',
+ inp:[['sel','drug','Preparat',[['mg','Siarczan magnezu 20%'],['glu','Glukonian wapnia 10%'],['cl','Chlorek wapnia 10%']],'mg']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const kid=p.grp!=='adult';
+  if(v.drug==='mg'){if(kid){const lo=Math.min(25*p.w,2000),hi=Math.min(50*p.w,2000);r.o('Dawka',`${f(lo)}–${f(hi)} mg`,'25–50 mg/kg (maks. 2 g)',true).o('Objętość 20%',`${f(lo/200,1)}–${f(hi/200,1)} ml`,'w 20 min (torsades: szybciej)');r.val={lo,hi}}
+   else{r.o('Dawka','1–2 g',`= 5–10 ml 20% · 2 g = ${f(2000/246.47,1)} mmol = ${f(2*2000/246.47,1)} mEq`,true).o('Czas','10–15 min','torsades, ciężka astma, hipomagnezemia');r.val={mmol2g:2000/246.47}}
+   r.f('MgSO₄·7H₂O: masa molowa 246,47 g/mol · 20%: 10 ml = 2 g')}
+  else if(v.drug==='glu'){r.o('Dawka',kid?f(Math.min(0.5*p.w,20),1)+' ml':'30 ml',kid?'0,5 ml/kg (maks. 20 ml)':'np. hiperkaliemia z EKG; 10 ml ≈ 2,2–2,3 mmol Ca²⁺',true);r.f('Glukonian wapnia 10%: 10 ml ≈ 2,2–2,3 mmol Ca²⁺')}
+  else{r.o('Dawka',kid?f(Math.min(0.2*p.w,10),1)+' ml':'10 ml',kid?'0,2 ml/kg (maks. 10 ml), dostęp centralny lub duża żyła':'10 ml ≈ 6,8 mmol Ca²⁺ (dihydrat) — preferuj dużą żyłę',true);r.f('Chlorek wapnia 10% (dihydrat): 10 ml ≈ 6,8 mmol Ca²⁺')}
+  r.m('warn','Zawartość mmol/ml zależy od soli i producenta — sprawdź ChPL preparatu dostępnego w Twoim szpitalu.');
+  r.m('info','Wapń nie w tej samej linii z wodorowęglanem i płynami z cytrynianem/fosforanami.');r.s('chpl','erc25');return r}},
+/* 18 */{id:'jednostki',cat:'el',t:'mmol ↔ mEq ↔ mg',d:'Przelicznik jonów',
+ inp:[['sel','ion','Jon',[['Na','Na⁺'],['K','K⁺'],['Cl','Cl⁻'],['HCO3','HCO₃⁻'],['Ca','Ca²⁺'],['Mg','Mg²⁺']],'Ca'],['num','x','Wartość','',2.5],['sel','u','Jednostka',[['mmol','mmol'],['meq','mEq'],['mg','mg']],'mmol']],
+ run(v,p){const r=mk();const I={Na:[22.99,1],K:[39.10,1],Cl:[35.45,1],HCO3:[61.02,1],Ca:[40.08,2],Mg:[24.31,2]}[v.ion];const x=num(v.x);if(!Number.isFinite(x)){r.m('info','Wpisz wartość.');return r}
+  const mmol=v.u==='mmol'?x:v.u==='meq'?x/I[1]:x/I[0];r.o('mmol',f(mmol,3),'',true).o('mEq',f(mmol*I[1],3)).o('mg',f(mmol*I[0],2),'masa jonu, nie soli');r.val={mmol,meq:mmol*I[1],mg:mmol*I[0]};
+  r.m('info','NaCl 1 g = 17,1 mmol Na⁺ · KCl 1 g = 13,4 mmol K⁺ · NaHCO₃ 8,4%: 1 ml = 1 mmol.');
+  r.f('mEq = mmol × wartościowość · mmol = mg ÷ masa molowa');return r}},
+/* 19 */{id:'krople',cat:'el',t:'Krople i ml/h',d:'Zestaw 20 kropli/ml (PL) i mikrozestaw',
+ inp:[['num','ml','Objętość','ml',1000],['num','h','Czas','h',8],['sel','fac','Zestaw',[['20','standardowy 20 kropli/ml'],['60','mikrozestaw 60 kropli/ml'],['15','15 kropli/ml (krew)']],'20'],['chk','hr','Lek wysokiego ryzyka (KCl ≥40 mmol/l, insulina, 3% NaCl, wazopresory)']],
+ run(v,p){const r=mk();const ml=num(v.ml),h=num(v.h);if(!(ml>0&&h>0)){r.m('info','Wpisz objętość i czas.');return r}
+  const mlh=ml/h,d=F.drops(ml,h,num(v.fac));r.o('Tempo',f(mlh,1)+' ml/h','',true).o('Krople/min',v.hr?'—':f(d,1),v.hr?'tylko pompa':`≈ ${Math.round(d)} kropli/min`,true);r.val={mlh,d};
+  if(v.hr)r.m('stop','Leki wysokiego ryzyka wyłącznie przez pompę infuzyjną — tryb „krople” zablokowany.');
+  r.m('info','Insulina 50 j./50 ml = 1 j./ml, więc ml/h = j./h.');
+  r.f('ml/h = objętość ÷ czas (h)\nKrople/min = objętość × krople/ml ÷ czas (min)\n20 kropli/ml: krople/min = ml/h ÷ 3 · 60 kropli/ml: krople/min = ml/h');return r}},
+/* 20 */{id:'luka-anionowa',cat:'el',t:'Luka anionowa',d:'Korekta o albuminę (Figge)',
+ inp:[['num','na','Na⁺','mmol/l',''],['num','cl','Cl⁻','mmol/l',''],['num','hco','HCO₃⁻','mmol/l',''],['num','alb','Albumina','',''],['sel','au','Jednostka albuminy',[['gdl','g/dl'],['gl','g/l']],'gdl']],
+ run(v,p){const r=mk();const na=num(v.na),cl=num(v.cl),h=num(v.hco);if(![na,cl,h].every(Number.isFinite)){r.m('info','Wpisz Na⁺, Cl⁻ i HCO₃⁻.');return r}
+  const ag=F.ag(na,cl,h);r.o('Luka anionowa',f(ag,1)+' mmol/l','norma ok. 8–12 (zależna od laboratorium)',true);r.val={ag};
+  const a=num(v.alb);if(Number.isFinite(a)){const g=v.au==='gl'?a/10:a;const c=F.agc(ag,g);r.o('Skorygowana o albuminę',f(c,1)+' mmol/l',`albumina ${f(g,1)} g/dl`,true);r.val.agc=c;if(c>12)r.m('warn','Podwyższona luka anionowa — kwasica z luką (mleczanowa, ketonowa, mocznicowa, toksyny).')}
+  r.m('info','Konsensus DKA 2024 usunął lukę anionową z kryteriów rozpoznania DKA.');
+  r.f('AG = Na⁺ − (Cl⁻ + HCO₃⁻)\nAG skor. = AG + 2,5 × (4,0 − albumina [g/dl])').s('figge','ada24');return r}},
+/* 21 */{id:'masa',cat:'el',t:'Masa należna, BSA, masa dziecka',d:'IBW, masa skorygowana, Mosteller, APLS',inp:[],
+ run(v,p){const r=mk();const out=[];
+  if(Number.isFinite(p.ibw)&&p.grp==='adult'){r.o('Masa należna (IBW)',f(p.ibw,1)+' kg',P.sex==='M'?'50 + 0,91 × (wzrost − 152,4)':'45,5 + 0,91 × (wzrost − 152,4)',true);r.val.ibw=p.ibw;
+   if(Number.isFinite(p.w)){const a=F.adj(p.ibw,p.w);r.o('Masa skorygowana',f(a,1)+' kg','IBW + 0,4 × (masa − IBW)');r.val.adj=a}}
+  if(Number.isFinite(p.bmi))r.o('BMI',f(p.bmi,1)+' kg/m²');
+  if(p.w>0&&p.h>0){const b=F.bsa(p.w,p.h);r.o('BSA (Mosteller)',f(b,2)+' m²');r.val.bsa=b}
+  if(Number.isFinite(p.ageY)&&p.ageY<13){const a=F.apls(p.ageY),o=F.aplsOld(p.ageY);r.o('Masa dziecka — APLS',a?f(a,1)+' kg':'—','<1 r.: 0,5 × mies. + 4 · 1–5 lat: 2 × wiek + 8 · 6–12 lat: 3 × wiek + 7',true);if(o)r.o('Dawny wzór (wiek + 4) × 2',f(o)+' kg');r.val.apls=a;r.val.old=o;
+   r.m('warn','Wzory wiekowe mylą się o 10–25%. Kolejność: masa zmierzona > podana przez rodzica > taśma Broselow/Luten > wzór.')}
+  if(!r.out.length)r.m('info','Uzupełnij masę, wzrost, płeć i wiek w panelu „Pacjent”.');
+  r.s('devine','mosteller','apls');return r}},
+/* 22 */{id:'diureza',cat:'el',t:'Diureza',d:'ml/kg/h i oliguria',inp:[['num','ml','Objętość moczu','ml',''],['num','h','Czas zbiórki','h',6]],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const ml=num(v.ml),h=num(v.h);if(!(ml>=0&&h>0)){r.m('info','Wpisz objętość moczu i czas.');return r}
+  const d=ml/(p.w*h);r.o('Diureza',f(d,2)+' ml/kg/h',f(ml/h,1)+' ml/h',true);r.val={d};
+  const lim=p.grp==='adult'?0.5:(Number.isFinite(p.ageY)&&p.ageY<1?2:1);
+  if(d<lim)r.m('warn',`Oliguria: <${f(lim,1)} ml/kg/h${p.grp==='adult'?' (KDIGO: przez ≥6 h)':''}.`);else if(Math.abs(d-lim)<1e-9)r.m('warn','Na granicy oligurii.');else r.m('ok','Diureza powyżej progu oligurii.');
+  r.f('ml/kg/h = objętość ÷ (masa × godziny)\nOliguria: dorośli <0,5 · dzieci <1 · niemowlęta <1–2 ml/kg/h').s('kdigo');return r}},
+/* 23 */{id:'krew',cat:'krew',t:'Przetoczenie składników krwi',d:'KKCz, KKP, osocze (FFP), krioprecypitat, masywne przetoczenie — dorośli i dzieci',
+ inp:[['sel','comp','Składnik',[['kkcz','KKCz — koncentrat krwinek czerwonych'],['kkp','KKP — koncentrat krwinek płytkowych'],['ffp','Osocze świeżo mrożone (FFP)'],['krio','Krioprecypitat'],['mtp','Masywne przetoczenie (protokół 1:1:1)']],'kkcz'],
+  ['num','hb','Hb aktualne (KKCz)','',''],['num','hbt','Hb docelowe (KKCz)','',''],['sel','hu','Jednostka Hb',[['gdl','g/dl'],['gl','g/l']],'gdl'],['sel','fac','Współczynnik wzoru (dzieci)',[['5','5'],['4','4']],'5'],
+  ['num','plt','Płytki aktualne (KKP)','×10⁹/l',''],['num','fib','Fibrynogen aktualny (krioprecypitat)','g/l',''],['chk','bleed','Czynne krwawienie']],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const kid=p.grp!=='adult';const taco=p.f.hf||p.f.ckd||p.elderly;const c=v.comp||'kkcz';
+  if(c==='kkcz'){const k=v.hu==='gl'?1:10;const a=num(v.hb)*k,b=num(v.hbt)*k;
+   if(Number.isFinite(a)&&(a<20||a>200)){r.m('stop','Hb poza zakresem — sprawdź jednostkę (g/dl czy g/l).');return r}
+   if(Number.isFinite(a)&&Number.isFinite(b)&&b>a){
+    if(kid){let vol=(b-a)*p.w*num(v.fac)/10;const cap=20*p.w;const cp=vol>cap;if(cp)vol=cap;
+     r.o('KKCz',f(vol)+' ml',`(${f(b-a)} g/l) × ${f(p.w,1)} kg × ${v.fac} ÷ 10${cp?' · przycięto do 20 ml/kg':''}`,true).o('Tempo',`${f(vol/4)}–${f(vol/3)} ml/h`,'przez 3–4 h (maks. 4 h od wydania)');r.val={vol}}
+    else{const u=(b-a)/10*p.w/70;const n=Math.max(1,Math.round(u));
+     r.o('KKCz',`≈ ${n} j.`,`wzrost Hb o ${f((b-a)/10,1)} g/dl; 1 j. podnosi Hb o ok. 1 g/dl (70 kg)`,true).o('Tempo 1 j.',taco?`${f(p.w)} ml/h`:'90–120 min',taco?'ryzyko TACO: ok. 1 ml/kg/h':'maks. 4 h od wydania z banku krwi');r.val={units:n};
+     r.m('info','Zasada pojedynczej jednostki: u stabilnego pacjenta przetocz 1 j., potem oceń stan i Hb.')}}
+   else r.m('info','Wpisz Hb aktualne i docelowe (wyższe), żeby policzyć objętość.');
+   const hbd=Number.isFinite(a)?a/10:NaN;
+   r.o('Próg przetoczenia (stabilny pacjent)','Hb <7 g/dl',kid?'dzieci stabilne, także na OIT':'większość dorosłych');
+   r.m('info',kid?'Noworodki i dzieci z siniczymi wadami serca — progi wg neonatologii / kardiologii dziecięcej.':'Hb <8 g/dl: kardiochirurgia, ortopedia, choroba sercowo-naczyniowa; ostry zawał — rozważ wyższy próg (MINT 2023). Przy czynnym krwawieniu decyduje klinika, nie Hb.');
+   if(Number.isFinite(hbd)&&hbd>=8&&!v.bleed)r.m('warn',`Hb ${f(hbd,1)} g/dl — powyżej progu restrykcyjnego; u stabilnego pacjenta przetoczenie zwykle niewskazane.`)}
+  else if(c==='kkp'){const lo=10*p.w,hi=15*p.w;
+   if(kid&&p.w<20){r.o('KKP',`${f(lo)}–${f(hi)} ml`,'10–15 ml/kg; wzrost PLT ok. 50 ×10⁹/l',true);r.val={lo,hi}}
+   else{r.o('KKP','1 dawka terapeutyczna','z aferezy lub zlewana z 4–6 donacji; wzrost PLT ok. 20–40 ×10⁹/l',true);r.val={dose:1}}
+   r.o('Czas','30–60 min','kontrola PLT 10–60 min po przetoczeniu');
+   r.m('info','Progi PLT (×10⁹/l): <10 profilaktycznie; <20 przy gorączce/sepsie; <50 czynne krwawienie lub zabieg inwazyjny; <100 krwawienie do OUN/oka, ciężki uraz.');
+   const pl=num(v.plt);if(Number.isFinite(pl)){if(pl>=100)r.m('warn','PLT ≥100 — przetoczenie KKP zwykle niewskazane.');else if(pl<10)r.m('warn','PLT <10 — wskazanie do profilaktycznego przetoczenia.')}}
+  else if(c==='ffp'){const lo=10*p.w,hi=15*p.w;r.o('Osocze (FFP)',`${f(lo)}–${f(hi)} ml`,'10–15 ml/kg',true);r.val={lo,hi};
+   if(!kid)r.o('W jednostkach',`≈ ${Math.round(lo/250)}–${Math.round(hi/250)} j.`,'1 j. ≈ 200–300 ml');
+   r.o('Tempo',kid?`${f(10*p.w)}–${f(20*p.w)} ml/h`:'ok. 30 min / j.',kid?'10–20 ml/kg/h':'wolniej przy ryzyku TACO');
+   r.m('info','Wskazanie: krwawienie lub zabieg przy zaburzeniach krzepnięcia (np. INR/APTT >1,5 × norma). Nie do korekty INR bez krwawienia. Odwrócenie VKA: koncentrat czynników zespołu protrombiny (PCC) — dawka w module leków.');
+   r.m('info','Osocze musi być zgodne w układzie AB0 (osocze grupy AB jest uniwersalne).')}
+  else if(c==='krio'){if(kid){r.o('Krioprecypitat',`${f(5*p.w)}–${f(10*p.w)} ml`,'5–10 ml/kg',true);r.val={lo:5*p.w,hi:10*p.w}}
+   else{r.o('Krioprecypitat',`≈ ${Math.round(p.w/10)}–${Math.round(p.w/5)} j.`,'zwykle 1 j./5–10 kg — sprawdź wielkość jednostki w swoim banku krwi',true);r.val={lo:Math.round(p.w/10),hi:Math.round(p.w/5)}}
+   r.o('Cel','fibrynogen ≥1,5–2 g/l','krwotok położniczy: ≥2 g/l');
+   const fb=num(v.fib);if(Number.isFinite(fb)){if(fb<1.5)r.m('warn',`Fibrynogen ${f(fb,1)} g/l — poniżej celu przy krwawieniu.`);else r.m('ok',`Fibrynogen ${f(fb,1)} g/l — w celu.`)}
+   r.m('info','Alternatywa: koncentrat fibrynogenu (dawka w module leków).')}
+  else{if(kid){r.o('Porcja (każdy składnik)',`${f(10*p.w)}–${f(20*p.w)} ml`,'KKCz : FFP : KKP 1:1:1, po 10–20 ml/kg',true);r.val={lo:10*p.w,hi:20*p.w}}
+   else{r.o('Pakiet','4–6 j. KKCz + 4–6 j. FFP + 1 dawka KKP','proporcja 1:1:1, powtarzaj wg stanu',true);r.val={}}
+   r.m('stop','Masywne krwawienie: uruchom protokół szpitalny; kwas traneksamowy w ciągu 3 h od urazu; zjonizowany Ca²⁺ >1,1 mmol/l; ogrzewanie płynów i pacjenta; fibrynogen ≥1,5–2 g/l; gazometria, mleczan i krzepnięcie (najlepiej testy lepkosprężystości).');
+   if(p.f.tbi)r.m('warn','TBI: bez hipotensji permisywnej, MAP ≥80 mmHg.')}
+  if(p.shock==='krw'&&c!=='mtp')r.m('warn','Wstrząs krwotoczny: rozważ protokół masywnego przetoczenia (wybierz „Masywne przetoczenie”).');
+  if(taco&&c!=='mtp')r.m('warn','Ryzyko TACO (niewydolność serca/nerek, wiek ≥65 lat): przetaczaj wolniej, oceń bilans, rozważ furosemid.');
+  r.m('info','Przed: identyfikacja pacjenta przy łóżku, próba zgodności (KKCz), zgoda. Zestaw z filtrem 170–200 µm. Pierwsze 15 min powoli; parametry życiowe przed, po 15 min i na końcu. Reakcja (gorączka, duszność, spadek RR, wysypka) → STOP, utrzymaj dostęp 0,9% NaCl, zgłoś do banku krwi.');
+  r.f(kid?'Dzieci: KKCz (ml) = (Hb docelowe − Hb aktualne) [g/l] × masa × 5 (lub 4) ÷ 10, maks. 20 ml/kg\nKKP 10–15 ml/kg · FFP 10–15 ml/kg · krioprecypitat 5–10 ml/kg':'Dorośli: 1 j. KKCz ≈ +1 g/dl Hb (70 kg) · FFP 10–15 ml/kg · KKP 1 dawka terapeutyczna · krioprecypitat 1 j./5–10 kg').s('pl_krew','aabb23','bsh','rossaint');
+  return r}},
+/* 24 */{id:'hipoglikemia',cat:'el',t:'Hipoglikemia u dzieci',d:'Glukoza 0,2 g/kg',inp:[],
+ run(v,p){const r=mk();if(!needW(p,r))return r;const g=0.2*p.w;r.o('Glukoza',f(g,1)+' g','0,2 g/kg (ERC 2025; wcześniej 0,3 g/kg)',true).o('Glukoza 10%',f(g*10,1)+' ml','2 ml/kg');r.val={g,ml:g*10};
+  if(p.grp==='adult')r.m('info','Dorośli — dawkowanie glukozy w module leków.');
+  r.m('info','Kontrola glikemii po 5–10 min; po wyrównaniu wlew podtrzymujący z glukozą.');r.f('0,2 g/kg = 2 ml/kg glukozy 10%').s('erc25');return r}},
+];
+
+
+const BAL='Optilyte / PWE (Fresenius), Sterofundin ISO (B. Braun), Ringer z mleczanami / Hartmann, Plasma-Lyte 148 (jeśli dostępny)';
+const REC={
+ 'podtrzymanie':p=>p.grp==='adult'?{best:'Płyn zbilansowany lub wieloelektrolitowy + glukoza 5% wg potrzeb, KCl wg stężenia K⁺',ex:BAL+'; glukoza 5% jako źródło wolnej wody i 50–100 g glukozy/d',av:'samego 0,9% NaCl w dużych objętościach (nadmiar Na⁺ i Cl⁻)'}:
+   {best:'Izotoniczny krystaloid (Na⁺ 131–154 mmol/l) z glukozą 5% i KCl',ex:'0,9% NaCl z glukozą 5% (gotowy worek albo dodatek glukozy wg protokołu) lub płyn wieloelektrolitowy (Optilyte/PWE) z glukozą 5%; KCl 20 mmol/l wg K⁺',av:'płynów hipotonicznych (0,18% / 0,45% NaCl z glukozą) — hiponatremia szpitalna'},
+ 'odwodnienie':p=>({best:'Lekkie/umiarkowane: doustny płyn nawadniający o niskiej osmolarności (ORS). Ciężkie/wstrząs: izotoniczny krystaloid i.v.',ex:'ORS o niskiej osmolarności (np. Gastrolit, Orsalit — sprawdź skład na opakowaniu); i.v. bolus: 0,9% NaCl lub zbilansowany ('+BAL+'); deficyt + podtrzymanie u dzieci: izotoniczny z glukozą 5%',av:'płynów hipotonicznych i.v.; soków, napojów słodzonych i izotoników sportowych zamiast ORS'}),
+ 'sepsa-dorosly':p=>({best:'Zbilansowany krystaloid',ex:BAL+'. Albumina 20% dopiero po dużych objętościach krystaloidów',av:'HES (wycofany w UE), żelatyn, klasycznego „Płynu Ringera” jako płynu zbilansowanego, 5% glukozy'}),
+ 'sepsa-dziecko':p=>({best:'Zbilansowany krystaloid; 0,9% NaCl przy hiponatremii, podejrzeniu ↑ ICP / zakażenia OUN, DKA, TBI',ex:BAL+'; 0,9% NaCl',av:'HES, żelatyn, 5% glukozy i płynów hipotonicznych do bolusów'}),
+ 'uraz':p=>p.f.tbi?{best:'0,9% NaCl (izotoniczny) + wczesne preparaty krwi',ex:'0,9% NaCl; KKCz : FFP : KKP 1:1:1',av:'Ringera z mleczanami (lekko hipotoniczny), 5% glukozy, HES, hipotensji permisywnej'}:
+   {best:'Jak najmniej krystaloidu (ciepły, zbilansowany), szybko preparaty krwi',ex:BAL+'; KKCz : FFP : KKP 1:1:1 lub krew pełna',av:'dużych objętości krystaloidów, HES, zimnych płynów'},
+ 'kardiogenny':p=>({best:'Mała porcja testowa krystaloidu',ex:'zbilansowany ('+BAL+') lub 0,9% NaCl, 200–250 ml',av:'dużych bolusów, 5% glukozy jako płynu do bolusa'}),
+ 'oparzenia':p=>({best:'Ringer z mleczanami (Hartmann) lub inny zbilansowany krystaloid; u dzieci <30 kg dodatkowo podtrzymanie z glukozą 5%',ex:'Ringer z mleczanami / Hartmann, Optilyte / PWE, Sterofundin ISO; albumina 5% lub 20% do rozważenia przy dużych oparzeniach (ABA 2023)',av:'HES, rutynowego osocza (FFP), samego 0,9% NaCl w dużych objętościach (kwasica hiperchloremiczna)'}),
+ 'hiponatremia':p=>({best:'Z objawami: 3% NaCl. Hipowolemiczna bez ciężkich objawów: 0,9% NaCl. SIADH: ograniczenie płynów',ex:'3% NaCl (gotowy lub przygotowany z 10% NaCl + 0,9% NaCl — kalkulator „Przygotowanie 3% NaCl”); 0,9% NaCl',av:'5% glukozy, płynów hipotonicznych, Ringera z mleczanami (Na⁺ 130)'}),
+ 'hipernatremia':p=>({best:'Najpierw wyrównaj hipowolemię izotonicznym krystaloidem, potem wolna woda',ex:'dorośli: 5% glukoza lub 0,45% NaCl (albo woda doustnie / przez zgłębnik); dzieci: izotoniczny krystaloid powoli przez 48 h',av:'szybkiego podawania 5% glukozy u dzieci; zbyt szybkiego spadku Na⁺'}),
+ 'nacl3':p=>({best:'3% NaCl',ex:'gotowy worek z apteki szpitalnej albo 0,9% NaCl + 10% NaCl (ampułki)',av:'podawania 10% NaCl nierozcieńczonego'}),
+ 'dka-dorosly':p=>({best:'Zbilansowany krystaloid (lub 0,9% NaCl) z KCl 40 mmol/l, a od glikemii <250 mg/dl dodatkowo glukoza 5–10%',ex:BAL+'; 0,9% NaCl; równolegle glukoza 10% przy glikemii <250 mg/dl',av:'płynów hipotonicznych na początku; przerywania insuliny zamiast dodania glukozy'}),
+ 'dka-dziecko':p=>({best:'0,9% NaCl (lub zbilansowany) z KCl 40 mmol/l; glukoza 5% przy glikemii ok. 14–17 mmol/l',ex:'0,9% NaCl + KCl 40 mmol/l; później 0,9% NaCl z glukozą 5% + KCl 40 mmol/l (wg ISPAD/BSPED dopuszczalny też płyn zbilansowany)',av:'płynów hipotonicznych, dużych szybkich bolusów, wodorowęglanu rutynowo'}),
+ 'potas':p=>({best:'KCl rozcieńczony w 0,9% NaCl lub płynie zbilansowanym',ex:'gotowe worki z KCl (np. 0,9% NaCl + KCl 20 lub 40 mmol/l) albo KCl 15% dodany do 0,9% NaCl i dokładnie wymieszany',av:'rozcieńczania w 5% glukozie przy ciężkiej hipokaliemii (glukoza → insulina → dalszy spadek K⁺), nierozcieńczonego KCl'}),
+ 'mg-ca':p=>({best:'MgSO₄ i wapń rozcieńczone w 0,9% NaCl lub 5% glukozie',ex:'MgSO₄ 20% w 100 ml 0,9% NaCl; glukonian wapnia 10% w 0,9% NaCl lub 5% glukozie',av:'wapnia w tej samej linii z wodorowęglanem, fosforanami i preparatami krwi'}),
+ 'krew':p=>({best:'Preparaty krwi tylko przez zestaw z filtrem; jedyny płyn w tej samej linii: 0,9% NaCl',ex:'KKCz, FFP, KKP, krioprecypitat; płukanie linii 0,9% NaCl',av:'5% glukozy (hemoliza) i Ringera z mleczanami / płynów z wapniem (krzepnięcie) w tej samej linii'}),
+ 'hipoglikemia':p=>({best:'Glukoza 10% i.v.',ex:'glukoza 10%: 2 ml/kg, potem wlew podtrzymujący z glukozą',av:'stężonej glukozy 20–50% obwodowo u dzieci (uszkodzenie żyły)'}),
+ 'tbsa':p=>({best:'Zobacz kalkulator „Resuscytacja w oparzeniach”',ex:'Ringer z mleczanami / Hartmann lub inny zbilansowany krystaloid',av:'HES'}),
+};
+function recHtml(c,p){const fn=REC[c.id];if(!fn)return '';const x=fn(p);
+ return `<div class="rec"><div class="rec-h">Płyn z wyboru</div><div class="rec-r"><span class="rk ok">Z wyboru</span><span>${x.best}</span></div><div class="rec-r"><span class="rk ex">Przykłady (PL)</span><span>${x.ex}</span></div><div class="rec-r"><span class="rk av">Unikaj</span><span>${x.av}</span></div></div>`}
+
+/* ================= LUND-BROWDER ================= */
+const LBREG=[['Głowa','A'],['Szyja',2],['Tułów — przód',13],['Tułów — tył',13],['Pośladek P',2.5],['Pośladek L',2.5],['Krocze / genitalia',1],['Ramię P',4],['Ramię L',4],['Przedramię P',3],['Przedramię L',3],['Dłoń P',2.5],['Dłoń L',2.5],['Udo P','B'],['Udo L','B'],['Podudzie P','C'],['Podudzie L','C'],['Stopa P',3.5],['Stopa L',3.5]];
+const LBTAB=[{max:1,n:'0 lat',A:9.5,B:2.75,C:2.5},{max:5,n:'1 rok',A:8.5,B:3.25,C:2.5},{max:10,n:'5 lat',A:6.5,B:4,C:2.75},{max:15,n:'10 lat',A:5.5,B:4.5,C:3},{max:16,n:'15 lat',A:4.5,B:4.5,C:3.25},{max:999,n:'dorosły',A:3.5,B:4.75,C:3.5}];
+function LBband(a){return LBTAB.find(b=>a<b.max)}
+function LBval(reg,a){const b=LBband(a);return typeof reg[1]==='number'?reg[1]:2*b[reg[1]]}
+function LBtot(v,a){return LBREG.reduce((s,reg,i)=>s+LBval(reg,a)*(num(v['lb'+i])||0)/100,0)}
+
+/* ================= TREŚCI ================= */
+const FLUIDTAB=`<div class="tw"><table><thead><tr><th>Płyn</th><th>Na⁺<br><span class="u">mmol/l</span></th><th>K⁺<br><span class="u">mmol/l</span></th><th>Ca²⁺<br><span class="u">mmol/l</span></th><th>Mg²⁺<br><span class="u">mmol/l</span></th><th>Cl⁻<br><span class="u">mmol/l</span></th><th>Bufor<br><span class="u">mmol/l</span></th><th>Osmolarność<br><span class="u">mOsm/l</span></th><th>Uwagi</th></tr></thead><tbody>
+<tr><td>0,9% NaCl</td><td>154</td><td>0</td><td>0</td><td>0</td><td>154</td><td>—</td><td>308</td><td>kwasica hiperchloremiczna przy dużych objętościach; TBI, hiponatremia, DKA u dzieci</td></tr>
+<tr><td>Płyn Ringera (klasyczny)</td><td>≈147</td><td>4</td><td>≈2,25</td><td>0</td><td>≈155</td><td>—</td><td>≈309</td><td><b>NIE jest zbilansowany</b></td></tr>
+<tr><td>Ringer z mleczanami / Hartmann</td><td>130–131</td><td>4–5</td><td>1,35–2</td><td>0</td><td>109–111</td><td>mleczan 28–29</td><td>≈273–278</td><td>lekko hipotoniczny — ostrożnie w TBI</td></tr>
+<tr><td>Optilyte (PWE)</td><td>141</td><td>5</td><td>2</td><td>1</td><td>109</td><td>octan 34, cytrynian 3</td><td>≈290–300</td><td>zawiera Ca²⁺</td></tr>
+<tr><td>Sterofundin ISO</td><td>145</td><td>4</td><td>2,5</td><td>1</td><td>127</td><td>octan 24, jabłczan 5</td><td>309</td><td></td></tr>
+<tr><td>Plasma-Lyte 148</td><td>140</td><td>5</td><td>0</td><td>1,5</td><td>98</td><td>octan 27, glukonian 23</td><td>294</td><td>bez Ca²⁺ (jeśli dostępny)</td></tr>
+<tr><td>5% glukoza</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>—</td><td>278</td><td>in vivo = wolna woda; nie do resuscytacji</td></tr>
+<tr><td>3% NaCl</td><td>513</td><td>0</td><td>0</td><td>0</td><td>513</td><td>—</td><td>1026</td><td>hiponatremia z objawami, ↑ ICP</td></tr>
+<tr><td>10% NaCl (ampułki)</td><td>1711</td><td>0</td><td>0</td><td>0</td><td>1711</td><td>—</td><td>3422</td><td>tylko do przygotowania roztworów</td></tr>
+<tr><td>8,4% NaHCO₃</td><td>1000</td><td>—</td><td>—</td><td>—</td><td>—</td><td>HCO₃⁻ 1000</td><td>2000</td><td>1 ml = 1 mmol Na⁺ i 1 mmol HCO₃⁻</td></tr>
+<tr><td>Albumina 5% / 20%</td><td>≈130–160</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>SSC: po dużych objętościach krystaloidów; ABA: rozważ w oparzeniach</td></tr>
+<tr><td>HES</td><td colspan="7">—</td><td><b>pozwolenia zawieszone w UE (decyzja KE 24.05.2022) — nie stosować</b></td></tr>
+<tr><td>Żelatyny</td><td colspan="7">—</td><td>SSC: krystaloidy zamiast żelatyn</td></tr>
+</tbody></table></div>`;
+const PAGES={
+ plyny:{t:'Skład płynów',h:()=>`<div class="doc"><h3>Skład płynów infuzyjnych</h3><p class="lead">Wartości różnią się między producentami — w razie wątpliwości sprawdź ChPL preparatu ze swojego szpitala. <span class="badge c">⚠ do weryfikacji w ChPL</span></p>
+ <div class="m info"><span class="k">Jednostki</span><span><b>Jony (Na⁺, K⁺, Ca²⁺, Mg²⁺, Cl⁻) i bufory: mmol/l</b> — milimole w 1 litrze płynu. Dla Na⁺, K⁺ i Cl⁻ 1 mmol/l = 1 mEq/l; dla Ca²⁺ i Mg²⁺ 1 mmol/l = 2 mEq/l. <b>Osmolarność: mOsm/l</b> — teoretyczna, wyliczona ze składu (rzeczywista osmolalność w organizmie bywa nieco niższa). Dla porównania osocze: Na⁺ 135–145, K⁺ 3,5–5,0, Cl⁻ 98–106 mmol/l, osmolalność 275–295 mOsm/kg. Bufor (mleczan, octan, glukonian, jabłczan, cytrynian) zamienia się w wątrobie i mięśniach w wodorowęglan.</span></div>
+ ${FLUIDTAB}<p class="unitnote">Przykład odczytu: 1 litr Optilyte zawiera 141 mmol Na⁺ i 5 mmol K⁺; 1 litr 0,9% NaCl zawiera 154 mmol Na⁺ i 154 mmol Cl⁻ (Cl⁻ wyraźnie wyższy niż w osoczu — dlatego przy dużych objętościach powoduje kwasicę hiperchloremiczną).</p></div>
+ <div class="doc"><h3>Płyn z wyboru — sytuacje kliniczne</h3><div class="tw"><table><thead><tr><th>Sytuacja</th><th>Z wyboru</th><th>Przykłady (PL)</th><th>Unikaj</th></tr></thead><tbody>
+ <tr><td>Sepsa / wstrząs septyczny</td><td>zbilansowany krystaloid</td><td>Optilyte/PWE, Sterofundin ISO, Ringer z mleczanami</td><td>HES, żelatyny, 5% glukoza</td></tr>
+ <tr><td>Wstrząs krwotoczny</td><td>krew (KKCz:FFP:KKP 1:1:1), minimum krystaloidu</td><td>ciepły zbilansowany krystaloid do 1 l (dzieci 20 ml/kg)</td><td>duże objętości krystaloidów, HES</td></tr>
+ <tr><td>Uraz mózgu (TBI)</td><td>0,9% NaCl</td><td>0,9% NaCl; przy ↑ ICP 3% NaCl</td><td>Ringer z mleczanami, 5% glukoza</td></tr>
+ <tr><td>Odwodnienie lekkie/umiarkowane</td><td>ORS doustnie</td><td>ORS o niskiej osmolarności (np. Gastrolit, Orsalit)</td><td>soki, napoje słodzone, izotoniki sportowe</td></tr>
+ <tr><td>Odwodnienie ciężkie / wstrząs hipowolemiczny</td><td>izotoniczny krystaloid i.v.</td><td>0,9% NaCl lub zbilansowany</td><td>płyny hipotoniczne</td></tr>
+ <tr><td>Podtrzymanie — dzieci</td><td>izotoniczny z glukozą 5% + KCl</td><td>0,9% NaCl z glukozą 5% lub PWE z glukozą 5%</td><td>0,18% / 0,45% NaCl z glukozą</td></tr>
+ <tr><td>Podtrzymanie — dorośli</td><td>zbilansowany + glukoza wg potrzeb</td><td>Optilyte/PWE + glukoza 5%, KCl wg K⁺</td><td>sam 0,9% NaCl w dużych ilościach</td></tr>
+ <tr><td>Oparzenia</td><td>Ringer z mleczanami / zbilansowany</td><td>Hartmann, Optilyte; albumina przy dużych oparzeniach</td><td>HES, rutynowo FFP</td></tr>
+ <tr><td>DKA dorośli</td><td>zbilansowany lub 0,9% NaCl + KCl; glukoza 5–10% przy &lt;250 mg/dl</td><td>Optilyte, Sterofundin ISO, 0,9% NaCl</td><td>płyny hipotoniczne na starcie</td></tr>
+ <tr><td>DKA dzieci</td><td>0,9% NaCl (lub zbilansowany) + KCl 40 mmol/l</td><td>0,9% NaCl, potem z glukozą 5%</td><td>płyny hipotoniczne, duże szybkie bolusy</td></tr>
+ <tr><td>Hiponatremia z objawami</td><td>3% NaCl</td><td>gotowy lub z 10% NaCl + 0,9% NaCl</td><td>5% glukoza, płyny hipotoniczne</td></tr>
+ <tr><td>Hipernatremia</td><td>najpierw izotoniczny przy hipowolemii, potem wolna woda</td><td>5% glukoza, 0,45% NaCl, woda doustnie</td><td>zbyt szybka korekta (dzieci!)</td></tr>
+ <tr><td>Wstrząs kardiogenny</td><td>tylko mała porcja testowa</td><td>200–250 ml zbilansowanego lub 0,9% NaCl</td><td>duże bolusy</td></tr>
+ <tr><td>Hipoglikemia u dziecka</td><td>glukoza 10%</td><td>2 ml/kg</td><td>glukoza 20–50% obwodowo</td></tr>
+ <tr><td>Przetoczenie krwi</td><td>tylko 0,9% NaCl w tej samej linii</td><td>płukanie 0,9% NaCl</td><td>5% glukoza, Ringer z mleczanami w tej samej linii</td></tr>
+ </tbody></table></div><p class="unitnote">Nazwy handlowe to przykłady — dostępność zależy od szpitala. <span class="badge c">⚠ do weryfikacji w ChPL</span></p></div>
+ <div class="doc"><h3>Wybór płynu — skrót</h3><ul><li><b>Resuscytacja:</b> zbilansowany krystaloid (Optilyte/PWE, Sterofundin ISO, Ringer z mleczanami).</li><li><b>0,9% NaCl zamiast zbilansowanego:</b> TBI, hiponatremia, podejrzenie ↑ ICP, DKA u dzieci.</li><li><b>Podtrzymanie u dzieci:</b> tylko izotoniczne z glukozą 5% i KCl.</li><li><b>Nie stosować:</b> HES; hipotoniczne płyny jako podtrzymujące u dzieci; 5% glukoza do resuscytacji.</li></ul></div>`},
+ bezp:{t:'Bezpieczeństwo',h:()=>`<div class="doc"><h3>Flagi pacjenta — co zmieniają</h3><ul>
+ <li><b>Niewydolność serca:</b> bolusy 250 ml (dorośli) / 5 ml/kg (dzieci), ocena po każdym; podtrzymanie 20–25 ml/kg/d.</li>
+ <li><b>Niewydolność nerek / dializy:</b> jak wyżej; ostrożnie z K⁺ w płynach; KCl ≤10 mmol/h bez EKG.</li>
+ <li><b>Obrzęk płuc, SpO₂ ↓ po bolusie, nowe linie B:</b> STOP płynom.</li>
+ <li><b>TBI:</b> 0,9% NaCl; bez hipotensji permisywnej; MAP ≥80 mmHg.</li>
+ <li><b>Preeklampsja:</b> płyny ≤80 ml/h bez innych strat; bez rutynowych bolusów przed znieczuleniem przewodowym.</li>
+ <li><b>Dzieci:</b> tylko izotoniczne płyny podtrzymujące; Na⁺ co ≥24 h; przy ryzyku SIADH 50–80% zapotrzebowania.</li>
+ <li><b>Ciężkie niedożywienie u dziecka:</b> standardowe bolusy niebezpieczne — protokół WHO.</li>
+ <li><b>DKA u dziecka:</b> bez bolusów >20 ml/kg bez ponownej oceny; ocena neurologiczna co 1 h.</li></ul></div>
+ <div class="doc"><h3>Płynowrażliwość — zanim podasz kolejny bolus</h3><ul>
+ <li><b>PLR</b> (bierne uniesienie nóg): wzrost rzutu serca lub VTI w LVOT ≥10% → płynowrażliwy. Nie przy nadciśnieniu wewnątrzbrzusznym, urazie miednicy/kręgosłupa.</li>
+ <li><b>Mini-fluid challenge:</b> 100–250 ml w 1–2 min, odpowiedź VTI ≥10–15%.</li>
+ <li><b>USG IVC:</b> zapadalność >50% przy oddechu własnym — słaba wartość predykcyjna, tylko jako wsparcie.</li>
+ <li><b>PPV >12–13%:</b> tylko wentylowani mechanicznie, VT ≥8 ml/kg, rytm zatokowy, bez oddechów własnych.</li>
+ <li><b>Dzieci (SSC 2026):</b> POCUS serca i płuc do prowadzenia resuscytacji.</li></ul></div>
+ <div class="doc"><h3>Przeładowanie płynami</h3><ul><li>Dzieci: % przewodnienia = (przyjęte − wydalone) ÷ masa wyjściowa × 100; <b>>10% = alarm</b>.</li><li>Rosnące linie B, ↑ JVP, nowa hepatomegalia u dziecka, spadek SpO₂ → STOP.</li></ul></div>`},
+ zmiany:{t:'Zmiany 2021–2026',h:()=>`<div class="doc"><h3>Co się zmieniło lub jest sporne</h3><div class="tw"><table><thead><tr><th>Temat</th><th>Zmiana / spór</th><th>Źródło</th></tr></thead><tbody>
+ <tr><td>30 ml/kg w sepsie</td><td>Silna → słaba rekomendacja (2021); 2026: IBW/masa skorygowana przy BMI >30, po 30 ml/kg strategia liberalna lub restrykcyjna</td><td>SSC 2021, 2026</td></tr>
+ <tr><td>Zbilansowane vs 0,9% NaCl</td><td>Sugestia za zbilansowanymi (dorośli 2021/2026, dzieci 2026)</td><td>SSC, ERC 2025</td></tr>
+ <tr><td>Bolus u dzieci</td><td>ERC 10 ml/kg; SSC/ISPAD 10–20 ml/kg; maks. 500 ml u nastolatków</td><td>ERC 2025, SSC 2026</td></tr>
+ <tr><td>Oparzenia</td><td>Start 2 ml/kg/%TBSA; Parkland 4 ml = górna granica</td><td>ABA 2023</td></tr>
+ <tr><td>DKA dorośli</td><td>Płyny zbilansowane, bolusy 250 ml przy niewydolności serca/nerek, AG poza kryteriami</td><td>Konsensus 2024</td></tr>
+ <tr><td>Insulina w DKA</td><td>0,1 → 0,05 j./kg/h przy glikemii <14 mmol/l</td><td>JBDS 2021/2023</td></tr>
+ <tr><td>Bolus DKA u dzieci</td><td>ISPAD 20 ml/kg we wstrząsie vs BSPED 10 ml/kg</td><td>ISPAD 2022, BSPED</td></tr>
+ <tr><td>HES</td><td>Zawieszenie pozwoleń w UE</td><td>KE 24.05.2022</td></tr>
+ <tr><td>Hiponatremia</td><td>Bolusy vs wlew ciągły (SALSA 2021); limity UE 10/8 vs USA</td><td>Spasovski 2014, Baek 2021</td></tr>
+ <tr><td>Korekta Na⁺ o glukozę</td><td>1,6 (Katz) vs 2,4 (Hillier)</td><td>Katz 1973, Hillier 1999</td></tr>
+ <tr><td>Hipoglikemia u dzieci</td><td>0,3 → 0,2 g/kg</td><td>ERC 2025</td></tr>
+ <tr><td>Masa dziecka</td><td>Wzory APLS niedokładne — preferuj pomiar</td><td>Resuscitation 2014</td></tr>
+ <tr><td>Uraz</td><td>2 l → 1 l krystaloidu; SBP 80–90 bez TBI</td><td>ATLS 10, Rossaint 2023</td></tr>
+ </tbody></table></div></div>`},
+ zrodla:{t:'Źródła',h:()=>`<div class="doc"><h3>Źródła</h3><p class="lead"><span class="badge v">✓ zweryfikowane</span> sprawdzone w źródle pierwotnym · <span class="badge c">⚠ do weryfikacji</span> przyjęte z wiedzy ogólnej lub zestawienia — porównaj z dokumentem źródłowym przed użyciem.</p><div class="src">${Object.keys(SRC).map(k=>srcLine(k)).join('')}</div></div>
+ <div class="doc"><h3>Zastrzeżenia</h3><ul><li>Nie znaleziono odrębnych polskich wytycznych płynoterapii (PTMR, PTAiIT). Protokół Twojego szpitala ma pierwszeństwo przed wartościami domyślnymi.</li><li>Wzory to modele: Adrogué-Madias nie uwzględnia diurezy wodnej; wzory oparzeniowe mylą się w urazie inhalacyjnym i porażeniu prądem; wzory masy dziecka mylą się o 10–25%.</li><li>SSC 2026 opisano na podstawie zestawienia rekomendacji SCCM, nie pełnego tekstu.</li></ul></div>`},
+ test:{t:'Autotest',h:()=>testPage()},
+};
+function srcLine(k){const s=SRC[k];if(!s)return '';const link=s.pm?`<a href="https://pubmed.ncbi.nlm.nih.gov/${s.pm}/" target="_blank" rel="noopener">PMID ${s.pm}</a>`:s.u?`<a href="${s.u}" target="_blank" rel="noopener">link</a>`:'';
+ return `<div><span class="badge ${s.st}">${s.st==='v'?'✓':'⚠'}</span>${s.t}${link?' · '+link:''}${s.u2?` · <a href="${s.u2}" target="_blank" rel="noopener">SCCM</a>`:''}</div>`}
+
+/* ================= TESTY KONTROLNE T1–T45 ================= */
+function runCalc(id,vals,pt){const c=CALCS.find(x=>x.id===id);const base={w:70,h:(pt&&pt.age!==undefined&&F.ageY(pt.age,pt.ageU||'l')<18)?'':175,age:45,ageU:'l',sex:'M',flags:{}};
+ const save=P;P=Object.assign({},base,pt,{flags:Object.assign({},(pt&&pt.flags)||{})});const p=pat();P=save;
+ const v=defaults(c);Object.assign(v,vals||{});return c.run.call(c,v,p)}
+const TESTS=[
+ ['T1','Holliday-Segar 8 kg',()=>[F.hsD(8),F.hs421(8)],[800,32]],
+ ['T2','Holliday-Segar 15 kg',()=>[F.hsD(15),F.hs421(15)],[1250,50]],
+ ['T3','Holliday-Segar 25 kg',()=>[F.hsD(25),F.hs421(25)],[1600,65]],
+ ['T4','Holliday-Segar 35 kg',()=>[F.hsD(35)/24,F.hs421(35)],[75,75]],
+ ['T5','4-2-1 + limit 100 ml/h (70 kg, ścieżka dziecięca)',()=>{const r=runCalc('podtrzymanie',{pop:'kid'},{w:70,age:15});return[r.val.h421,r.val.capped]},[110,100]],
+ ['T6','Noworodek 3,5 kg, doba 3',()=>{const r=runCalc('podtrzymanie',{pop:'neo',day:'3'},{w:3.5,age:3,ageU:'d'});return[r.val.lo,r.val.hi]},[245,280]],
+ ['T7','Dorosły 70 kg; z niewydolnością serca',()=>{const a=runCalc('podtrzymanie',{},{w:70}),b=runCalc('podtrzymanie',{},{w:70,flags:{hf:1}});return[a.val.lo,a.val.hi,b.val.lo,b.val.hi]},[1750,2100,1400,1750]],
+ ['T8','Sepsa dorosły 70 kg',()=>[runCalc('sepsa-dorosly',{},{w:70}).val.vol],[2100]],
+ ['T9','Sepsa BMI >30 (M, 175 cm, 120 kg)',()=>{const r=runCalc('sepsa-dorosly',{},{w:120,h:175});return[r.val.ibwVol,r.val.adjVol]},[2118,2709]],
+ ['T10','IBW kobieta 165 cm',()=>[F.ibw('K',165)],[57.0]],
+ ['T11','Bolus dziecko 20 kg',()=>[runCalc('sepsa-dziecko',{},{w:20,age:6}).val.bol],[200]],
+ ['T12','Bolus nastolatek 60 kg (limit 500 ml)',()=>[runCalc('sepsa-dziecko',{},{w:60,age:15}).val.bol],[500]],
+ ['T13','Odwodnienie 12 kg, 7%',()=>{const r=runCalc('odwodnienie',{pct:'7'},{w:12,age:1.5});return[r.val.def,r.val.maint,r.val.tot,r.val.rate]},[840,1100,1940,80.83]],
+ ['T14','ORS 12 kg (50–100 ml/kg)',()=>[50*12,100*12],[600,1200]],
+ ['T15','Oparzenie dorosły ABA 80 kg, 40%',()=>{const r=runCalc('oparzenia',{tbsa:'40'},{w:80});return[r.val.tot,r.val.r1,r.val.r2]},[6400,400,200]],
+ ['T16','Parkland 80 kg, 40%',()=>{const r=runCalc('oparzenia',{tbsa:'40',frm:'park'},{w:80});return[r.val.tot,r.val.r1,r.val.r2]},[12800,800,400]],
+ ['T17','Rule of Tens 80 kg / 100 kg, 40%',()=>[F.rot(40,80),F.rot(40,100)],[400,600]],
+ ['T18','Oparzenie 2 h od urazu, podano 500 ml',()=>[runCalc('oparzenia',{tbsa:'40',hs:'2',given:'500'},{w:80}).val.r1],[450]],
+ ['T19','Oparzenie dziecko ABLS 20 kg, 30%',()=>{const r=runCalc('oparzenia',{tbsa:'30'},{w:20,h:115,age:6});return[r.val.tot,r.val.r1res,r.val.r2,r.val.maint,r.val.r1]},[1800,112.5,56.25,60,172.5]],
+ ['T20','BSA Mosteller',()=>[F.bsa(20,115),F.bsa(70,175)],[0.80,1.84]],
+ ['T21','Galveston BSA 0,80, 30%',()=>[F.galv(0.8,30)],[2800]],
+ ['T22','Adrogué-Madias K 70 lat 60 kg Na 112, 3% NaCl',()=>{const r=runCalc('hiponatremia',{na:'112',fl:'nacl3',vol:'150'},{w:60,age:70,sex:'K'});return[r.val.tbw,r.val.per,r.val.dVol]},[27,14.32,2.15]],
+ ['T23','Deficyt Na⁺ M 40 lat 70 kg, +8 (ODS)',()=>{const r=runCalc('hiponatremia',{na:'120',ods:true},{w:70,age:40});return[r.val.def,r.val.vol3]},[336,655]],
+ ['T24','Deficyt wolnej wody M 80 lat 70 kg Na 160',()=>{const r=runCalc('hipernatremia',{na:'160'},{w:70,age:80});return[r.val.tbw,r.val.dww,r.val.per,r.val.L]},[35,5.0,-4.44,2.25]],
+ ['T25','Limit korekty Na 118 → 129',()=>{const r=runCalc('hiponatremia',{na:'129',na0:'118'},{w:70,age:40});return[r.val.delta,r.msg.some(m=>m.lv==='stop'&&/Przekroczony/.test(m.t))?1:0]},[11,1]],
+ ['T26','3% NaCl z 250 ml 0,9%',()=>[F.prep3(250),250+F.prep3(250)],[75,325]],
+ ['T27','Na⁺ skorygowany 130, glukoza 600 mg/dl',()=>{const r=runCalc('sod-skorygowany',{na:'130',glu:'600'});return[r.val.k,r.val.h]},[138,142]],
+ ['T28','Osmolalność Na 140, glu 5,5, mocznik 5 mmol/l',()=>[runCalc('osmolalnosc',{na:'140',glu:'5.5',gluU:'mmol',ut:'mmol',u:'5'}).val.calc],[290.5]],
+ ['T29','Osmolalność HHS Na 150, glu 50, mocznik 20',()=>{const r=runCalc('osmolalnosc',{na:'150',glu:'50',gluU:'mmol',ut:'mmol',u:'20'});return[r.val.calc,r.val.eff]},[370,350]],
+ ['T30','Mocznik 60 mg/dl → mmol/l',()=>[F.ureaMmol(60,'mg')],[10]],
+ ['T31','AG + albumina',()=>{const r=runCalc('luka-anionowa',{na:'140',cl:'100',hco:'10',alb:'2'});return[r.val.ag,r.val.agc]},[30,35]],
+ ['T32','DKA dorosły 80 kg insulina',()=>{const r=runCalc('dka-dorosly',{},{w:80});return[r.val.ins,r.val.insRed]},[8,4]],
+ ['T33','DKA dziecko BSPED 20 kg pH 7,15',()=>{const r=runCalc('dka-dziecko',{prot:'bsped',ph:'7.15'},{w:20,age:7});return[r.val.rem,r.val.mH,r.val.rate,r.val.ins]},[800,62.5,79.17,1]],
+ ['T34','DKA dziecko ISPAD 30 kg 7%, bolus 300 ml',()=>[runCalc('dka-dziecko',{prot:'ispad',def:'7',hrs:'48',bolus:'300'},{w:30,age:10}).val.rate],[108.33]],
+ ['T35','Krople 1000 ml / 8 h',()=>{const a=runCalc('krople',{ml:'1000',h:'8',fac:'20'}),b=runCalc('krople',{ml:'1000',h:'8',fac:'60'});return[a.val.mlh,a.val.d,b.val.d]},[125,41.67,125]],
+ ['T36','KCl 40 mmol / 1000 ml @ 250 ml/h',()=>{const r=runCalc('potas',{mmol:'40',bag:'1000',rate:'250'});return[r.val.conc,r.val.mh,r.msg.some(m=>m.lv==='stop'&&/ALARM/.test(m.t))?1:0]},[40,10,0]],
+ ['T37','KCl 40 mmol / 500 ml obwodowo',()=>{const r=runCalc('potas',{mmol:'40',bag:'500',rate:'100'});return[r.val.conc,r.msg.some(m=>m.lv==='stop'&&/ALARM/.test(m.t))?1:0]},[80,1]],
+ ['T38','KCl dziecko 15 kg — maks. tempo',()=>[0.2*15,0.25*15],[3,3.75]],
+ ['T39','KCl 15% dla 20 mmol',()=>[20/2],[10]],
+ ['T40','MgSO₄ 20% 2 g',()=>{const r=runCalc('mg-ca',{drug:'mg'});return[r.val.mmol2g,2*r.val.mmol2g]},[8.11,16.23]],
+ ['T41','2,5 mmol Ca²⁺ → mEq',()=>[runCalc('jednostki',{ion:'Ca',x:'2.5',u:'mmol'}).val.meq],[5]],
+ ['T42','Masa APLS 6 mies. / 3 lata / 8 lat (+dawny 8 lat)',()=>[F.apls(0.5),F.apls(3),F.apls(8),F.aplsOld(8)],[7,14,31,24]],
+ ['T43','Diureza 70 kg, 210 ml / 6 h',()=>[runCalc('diureza',{ml:'210',h:'6'},{w:70}).val.d],[0.5]],
+ ['T44','KKCz dziecko 10 kg, Hb 60 → 80 g/l',()=>[runCalc('krew',{comp:'kkcz',hb:'60',hbt:'80',hu:'gl',fac:'5'},{w:10,age:1}).val.vol],[100]],
+ ['T49','KKCz dorosły 70 kg, Hb 6,5 → 8,5 g/dl',()=>[runCalc('krew',{comp:'kkcz',hb:'6.5',hbt:'8.5'},{w:70}).val.units],[2]],
+ ['T50','FFP i KKP dziecko 10 kg (10–15 ml/kg)',()=>{const a=runCalc('krew',{comp:'ffp'},{w:10,age:1}).val,b=runCalc('krew',{comp:'kkp'},{w:10,age:1}).val;return[a.lo,a.hi,b.lo,b.hi]},[100,150,100,150]],
+ ['T51','Walidacja: 18 kg, 5 lat, wzrost 175 cm → wzrost pominięty',()=>{const sv=P;P={w:'18',age:'5',ageU:'l',sex:'M',h:'175',flags:{}};const p=pat();P=sv;return[Number.isFinite(p.h)?1:0,p.chk.length]},[0,1]],
+ ['T52','Walidacja: 8 kg i „8 lat” → ostrzeżenie o wieku',()=>{const sv=P;P={w:'8',age:'8',ageU:'l',sex:'M',h:'',flags:{}};const p=pat();P=sv;return[p.chk.length]},[1]],
+ ['T53','Walidacja: 8 kg, 8 mies., 70 cm → bez ostrzeżeń',()=>{const sv=P;P={w:'8',age:'8',ageU:'m',sex:'M',h:'70',flags:{}};const p=pat();P=sv;return[p.chk.length,Number.isFinite(p.h)?1:0]},[0,1]],
+ ['T45','Glukoza 15 kg',()=>{const r=runCalc('hipoglikemia',{},{w:15,age:3});return[r.val.g,r.val.ml]},[3,30]],
+ ['T47','Odwodnienie z panelu: umiarkowane, 12 kg, 1,5 roku (6%) / niemowlę 0,5 roku 8 kg (10%)',()=>[runCalc('odwodnienie',{},{w:12,age:1.5,dehyd:'u'}).val.def,runCalc('odwodnienie',{},{w:8,age:0.5,dehyd:'u'}).val.def,runCalc('odwodnienie',{},{w:70,dehyd:'pct',dehydPct:'4'}).val.def],[720,800,2800]],
+ ['T48','DKA dziecko ISPAD — deficyt z panelu (ciężkie, 30 kg → 9%)',()=>[runCalc('dka-dziecko',{prot:'ispad',bolus:'300'},{w:30,age:10,dehyd:'c'}).val.defMl],[2700]],
+ ['T54','Wstrząs kardiogenny z panelu → bolus dziecko 20 kg 5 ml/kg',()=>[runCalc('sepsa-dziecko',{},{w:20,age:6,shock:'kard'}).val.bol,runCalc('sepsa-dziecko',{},{w:20,age:6,shock:'sept'}).val.bol],[100,200]],
+ ['T55','DKA dziecko BSPED, wstrząs z panelu → bolus nieodejmowany',()=>[runCalc('dka-dziecko',{prot:'bsped',ph:'7.15'},{w:20,age:7,shock:'hipo'}).val.rem],[1000]],
+ ['T56','Odwodnienie 12 kg lekkie + wstrząs hipowolemiczny → deficyt 10%',()=>[runCalc('odwodnienie',{},{w:12,age:2,dehyd:'l',shock:'hipo'}).val.def],[1200]],
+ ['T57','Sepsa dorosły + wstrząs kardiogenny → blokada (komunikat STOP)',()=>[runCalc('sepsa-dorosly',{},{w:70,shock:'kard'}).msg.filter(m=>m.lv==='stop'&&/kardiogenny/.test(m.t)).length],[1]],
+ ['T46','Lund-Browder: suma 100% (niemowlę i dorosły)',()=>{const all={};LBREG.forEach((_,i)=>all['lb'+i]='100');return[LBtot(all,0.5),LBtot(all,30)]},[100,100]],
+];
+function runTests(){return TESTS.map(([id,name,fn,exp])=>{let got,ok=false,err='';try{got=fn();ok=got.length===exp.length&&got.every((g,i)=>{const e=exp[i];return Math.abs(g-e)<=Math.max(0.005*Math.abs(e),0.011)})}catch(e){err=e.message;got=[]}return{id,name,got,exp,ok,err}})}
+function testPage(){const res=runTests();const n=res.filter(r=>r.ok).length;
+ return `<div class="doc"><h3>Autotest obliczeń</h3><p class="lead">Przypadki kontrolne z raportu (T1–T45), test tabeli Lund-Browder, odwodnienia z panelu pacjenta, przetoczeń, walidacji danych pacjenta i wstrząsu. Tolerancja ±0,5%. Uruchamiane na tym urządzeniu przy każdym otwarciu.</p>
+ <div class="m ${n===res.length?'ok':'stop'}"><span class="k">${n===res.length?'OK':'BŁĄD'}</span><span>${n} / ${res.length} testów zaliczonych</span></div>
+ <div class="tw"><table><thead><tr><th>#</th><th>Test</th><th>Oczekiwane</th><th>Wynik</th><th></th></tr></thead><tbody>${res.map(r=>`<tr><td>${r.id}</td><td>${r.name}</td><td>${r.exp.map(x=>f(x,2)).join(' · ')}</td><td>${r.err||r.got.map(x=>f(x,2)).join(' · ')}</td><td class="${r.ok?'pass':'fail'}">${r.ok?'✓':'✗'}</td></tr>`).join('')}</tbody></table></div></div>`}
+
+/* ================= UI ================= */
+const $=s=>document.querySelector(s);let tab='kalk',query='',cur=null;
+function defaults(c){const v={};if(Array.isArray(c.inp))c.inp.forEach(i=>{if(i[0]==='chk')v[i[1]]=false;else v[i[1]]=i[0]==='sel'?(i[4]??i[3][0][0]):(i[4]??'')});if(c.inp==='lb')LBREG.forEach((_,i)=>v['lb'+i]='0');return v}
+function vals(c){if(!V[c.id])V[c.id]=defaults(c);return V[c.id]}
+function esc(s){return String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))}
+function ptSummary(){const p=pat();const parts=[Number.isFinite(p.w)||Number.isFinite(p.ageY)?GRPN[p.grp]:'brak danych — wpisz masę i wiek'];if(Number.isFinite(p.w))parts.push(f(p.w,1)+' kg');if(Number.isFinite(p.ageY))parts.push(P.age+' '+({l:'l.',m:'mies.',d:'dni'}[P.ageU]));parts.push(P.sex==='M'?'M':'K');if(Number.isFinite(p.h))parts.push(f(p.h)+' cm');else if(num(P.h)>0)parts.push('wzrost ✗');if(Number.isFinite(p.bmi))parts.push('BMI '+f(p.bmi,1));
+ if(Number.isFinite(p.dehyd))parts.push(`odwodnienie ${DEHN[p.dehydG]} ${f(p.dehyd)}%`);if(p.shock)parts.push('WSTRZĄS '+SHOCK[p.shock].n);const fl=FLAGDEF.filter(([k])=>P.flags[k]).map(x=>x[1]);if(p.elderly)fl.unshift('≥65 lat');const el=$('#ptSum');if(el)el.textContent=parts.join(' · ')+(fl.length?' · '+fl.join(', '):'');const ex=$('#ptEx');if(ex)ex.hidden=!isExample;const ps=$('#ptShock');if(ps)ps.innerHTML=p.shock?`<div class="m stop"><span class="k">Wstrząs</span><span><b>${SHOCK[p.shock].n}:</b> ${SHOCK[p.shock].t} ${SHOCK[p.shock].go.map(id=>{const c=CALCS.find(x=>x.id===id);return c&&id!==cur?`<button class="btn sec" type="button" data-go="${id}" style="margin:6px 6px 0 0;padding:6px 10px;font-size:13px">${c.t} ›</button>`:''}).join('')}</span></div>`:'';const pw=$('#ptWarn');if(pw)pw.innerHTML=p.chk.map(t=>`<div class="m warn"><span class="k">Sprawdź</span><span>${t}</span></div>`).join('')}
+function ptHtml(){const fl=FLAGDEF.map(([k,l])=>`<label class="chk${P.flags[k]?' on':''}"><input type="checkbox" data-flag="${k}" ${P.flags[k]?'checked':''}>${l}</label>`).join('');
+ return `<details class="pt" id="pt"${ptOpen?' open':''}><summary><b>Pacjent</b><span class="sum" id="ptSum"></span><span class="pill ex" id="ptEx"${isExample?'':' hidden'}>przykład — wpisz swojego pacjenta</span></summary>
+ <div class="body"><div class="grid2">
+ <label class="f" for="p_w">Masa ciała<span class="row"><input class="n" id="p_w" data-p="w" inputmode="decimal" autocomplete="off" value="${esc(P.w??'')}"><span class="unit">kg</span></span></label>
+ <label class="f" for="p_age">Wiek<span class="row"><input class="n" id="p_age" data-p="age" inputmode="decimal" autocomplete="off" value="${esc(P.age??'')}"><select id="p_ageU" data-p="ageU" style="max-width:90px">${[['l','lat'],['m','mies.'],['d','dni']].map(([a,b])=>`<option value="${a}"${P.ageU===a?' selected':''}>${b}</option>`).join('')}</select></span></label>
+ <label class="f" for="p_sex">Płeć<select id="p_sex" data-p="sex"><option value="M"${P.sex==='M'?' selected':''}>mężczyzna / chłopiec</option><option value="K"${P.sex==='K'?' selected':''}>kobieta / dziewczynka</option></select></label>
+ <label class="f" for="p_h">Wzrost<span class="row"><input class="n" id="p_h" data-p="h" inputmode="decimal" autocomplete="off" value="${esc(P.h??'')}"><span class="unit">cm</span></span></label>
+ <label class="f" for="p_dehyd">Odwodnienie<select id="p_dehyd" data-p="dehyd">${[['','brak / nieoceniane'],['l','lekkie (niemowlę 5%, starsi 3%)'],['u','umiarkowane (niemowlę 10%, starsi 6%)'],['c','ciężkie (niemowlę 15%, starsi 9%)'],['pct','wpiszę % (np. z masy ciała)']].map(([a,b])=>`<option value="${a}"${(P.dehyd||'')===a?' selected':''}>${b}</option>`).join('')}</select></label>
+ <label class="f" for="p_shock">Wstrząs<select id="p_shock" data-p="shock">${[['','brak'],...Object.entries(SHOCK).map(([k,o])=>[k,o.n])].map(([a,b])=>`<option value="${a}"${(P.shock||'')===a?' selected':''}>${b}</option>`).join('')}</select></label>
+ <label class="f" for="p_dpct" id="p_dpctWrap"${P.dehyd==='pct'?'':' hidden'}>Odwodnienie %<span class="row"><input class="n" id="p_dpct" data-p="dehydPct" inputmode="decimal" autocomplete="off" value="${esc(P.dehydPct??'')}"><span class="unit">%</span></span></label>
+ </div><div class="msgs" id="ptShock" style="margin-top:0"></div><div class="msgs" id="ptWarn" style="margin-top:0"></div><div class="flags">${fl}</div><div class="acts" style="margin-top:0"><button class="btn sec" id="ptClear" type="button">Wyczyść dane pacjenta</button></div></div></details>`}
+let ptOpen=true;
+function ptUpdate(t){const k=t.dataset&&t.dataset.p,fk=t.dataset&&t.dataset.flag;if(!k&&!fk)return false;if(!t.isConnected)return true;
+ if(k){P[k]=t.value;if(k==='dehyd'){const wr=$('#p_dpctWrap');if(wr)wr.hidden=t.value!=='pct'}}if(fk){P.flags[fk]=t.checked;t.parentElement.classList.toggle('on',t.checked)}
+ isExample=false;save();ptSummary();if(cur)compute();else if(k==='shock'){const sb=$('#shockBanner');if(sb)sb.innerHTML=shockBanner()}return true}
+function inputHtml(c,i,v){const [t,k,l,u]=i;const id=`i_${c.id}_${k}`;
+ if(t==='num')return `<label class="f" for="${id}">${l}<span class="row"><input class="n" id="${id}" data-k="${k}" inputmode="decimal" autocomplete="off" value="${esc(v[k])}">${u?`<span class="unit">${u}</span>`:''}</span></label>`;
+ if(t==='sel')return `<label class="f" for="${id}">${l}<select id="${id}" data-k="${k}">${u.map(([a,b])=>`<option value="${a}"${String(v[k])===String(a)?' selected':''}>${b}</option>`).join('')}</select></label>`;
+ if(t==='chk')return `<label class="chk${v[k]?' on':''}" style="grid-column:1/-1"><input type="checkbox" id="${id}" data-k="${k}"${v[k]?' checked':''}>${l}</label>`}
+function lbHtml(c,v){const a=pat().ageY;return `<div class="lb">${LBREG.map((reg,i)=>{const id=`i_${c.id}_lb${i}`;const pc=Number.isFinite(a)?f(LBval(reg,a),2)+'%':'';return `<label class="f" for="${id}">${reg[0]} <span style="font-weight:500">${pc}</span><select id="${id}" data-k="lb${i}">${[0,25,50,75,100].map(x=>`<option value="${x}"${String(v['lb'+i])===String(x)?' selected':''}>${x===0?'—':x===100?'całość':x+'%'}</option>`).join('')}</select></label>`}).join('')}</div>`}
+function shockBanner(){const pp=pat();if(!pp.shock)return '';return `<div class="msgs"><div class="m stop"><span class="k">Wstrząs</span><span><b>${SHOCK[pp.shock].n}</b> — polecane kalkulatory: ${SHOCK[pp.shock].go.map(id=>`<button class="btn sec" type="button" data-go="${id}" style="margin:6px 6px 0 0;padding:6px 10px;font-size:13px">${CALCS.find(x=>x.id===id).t} ›</button>`).join('')}</span></div></div>`}
+function listView(){const q=query.trim().toLowerCase();let h=`<div class="tabs" role="tablist">${[['kalk','Kalkulatory'],['plyny','Skład płynów'],['bezp','Bezpieczeństwo'],['zmiany','Zmiany 2021–26'],['zrodla','Źródła'],['test','Autotest']].map(([k,l])=>`<button data-tab="${k}" aria-current="${tab===k}">${l}</button>`).join('')}</div>`;
+ if(tab!=='kalk')return h+PAGES[tab].h();
+ h+=`<div id="shockBanner">${shockBanner()}</div>`;
+ h+=`<div class="search"><input class="n" id="q" placeholder="Szukaj: sód, oparzenia, potas, DKA…" value="${esc(query)}" style="font-family:var(--f-ui)" aria-label="Szukaj kalkulatora"></div>`;
+ for(const [ck,[cn,col]] of Object.entries(CATS)){const items=CALCS.filter(c=>c.cat===ck&&(!q||(c.t+' '+c.d).toLowerCase().includes(q)));if(!items.length)continue;
+  h+=`<h2 class="grp"><i style="background:var(${col})"></i>${cn}</h2><div class="list">${items.map(c=>`<button class="card" data-go="${c.id}" style="--cc:var(${col})"><span class="bar"></span><span class="t"><strong>${c.t}</strong><span>${c.d}</span></span></button>`).join('')}</div>`}
+ return h}
+function calcView(c){const v=vals(c);const col=CATS[c.cat][1];
+ const inp=c.inp==='lb'?lbHtml(c,v):c.inp.length?`<div class="grid2">${c.inp.map(i=>inputHtml(c,i,v)).join('')}</div>`:'<p class="lead" style="margin:0">Obliczenia z danych pacjenta (u góry).</p>';
+ return `<div style="--cc:var(${col})"><div class="calc-h"><span class="cat">${CATS[c.cat][0]}</span><h2>${c.t}</h2></div><p class="lead">${c.d}</p><div class="panel" id="inps">${inp}</div><div id="out"></div></div>`}
+function resultHtml(c,r){let h='';
+ if(r.out.length)h+=`<div class="res">${r.out.map(o=>`<div class="o${o.big?' big':''}"><span class="l">${o.l}</span><span class="v">${o.v}</span>${o.s?`<span class="s">${o.s}</span>`:''}</div>`).join('')}</div>`;
+ const order={stop:0,warn:1,ok:2,info:3};const ms=[...r.msg].sort((a,b)=>order[a.lv]-order[b.lv]);
+ if(ms.length)h+=`<div class="msgs">${ms.map(m=>`<div class="m ${m.lv}"><span class="k">${{stop:'Stop',warn:'Uwaga',info:'Info',ok:'OK'}[m.lv]}</span><span>${m.t}</span></div>`).join('')}</div>`;
+ if(r.act.length)h+=`<div class="acts">${r.act.map((a,i)=>`<button class="btn${a.sec?' sec':''}" data-act="${i}">${a.l}</button>`).join('')}</div>`;
+ h+=recHtml(c,pat());
+ if(r.fx)h+=`<div class="fx"><b>Wzór</b><br><code>${r.fx}</code></div>`;
+ if(r.src.length)h+=`<div class="src"><b>Źródła</b>${[...new Set(r.src)].map(srcLine).join('')}</div>`;return h}
+let curR=null;
+function compute(){const c=CALCS.find(x=>x.id===cur);if(!c||!$('#out'))return;const p=pat();const r=c.run.call(c,vals(c),p);
+ p.chk.slice().reverse().forEach(t=>r.msg.unshift({lv:'warn',t:'Dane pacjenta: '+t}));
+ if(isExample)r.msg.unshift({lv:'warn',t:'Liczę na DANYCH PRZYKŁADOWYCH (70 kg, 45 lat). Wpisz dane swojego pacjenta w panelu „Pacjent” powyżej.'});if(p.grp==='?'&&c.id!=='nacl3'&&c.id!=='krople'&&c.id!=='jednostki')r.msg.unshift({lv:'warn',t:'Brak wieku pacjenta — część dawek zależy od tego, czy to dziecko czy dorosły. Uzupełnij wiek.'});curR=r;const used=`<div class="fx" style="margin-top:0;margin-bottom:0"><b>Dane do obliczeń:</b> ${esc(document.getElementById('ptSum')?document.getElementById('ptSum').textContent:'')}</div>`;$('#out').innerHTML=`<div style="margin-top:12px">${used}</div>`+resultHtml(c,r)}
+function refresh(){if(cur)compute();else render()}
+function go(id){cur=CALCS.find(x=>x.id===id)?id:null;render();try{const h=cur?'#'+cur:' ';if(location.hash!==(cur?'#'+cur:''))history.pushState(null,'',h)}catch(e){}}
+function render(){const c=CALCS.find(x=>x.id===cur);$('#btnBack').hidden=!c;
+ if(c){$('#view').innerHTML=ptHtml()+calcView(c);ptSummary();compute();window.scrollTo(0,0)}else{$('#view').innerHTML=ptHtml()+listView();ptSummary();const q=$('#q');if(q&&query){q.focus();q.setSelectionRange(query.length,query.length)}}}
+function onField(e){const t=e.target;if(!t||!t.isConnected)return;if(t.id==='q'){if(e.type==='input'){query=t.value;render()}return}
+ if(ptUpdate(t))return;
+ const k=t.dataset&&t.dataset.k;if(!k)return;const c=CALCS.find(x=>x.id===cur);if(!c)return;vals(c)[k]=t.type==='checkbox'?t.checked:t.value;if(t.type==='checkbox')t.parentElement.classList.toggle('on',t.checked);compute()}
+['input','change','keyup'].forEach(ev=>document.addEventListener(ev,onField));
+document.addEventListener('toggle',e=>{if(e.target.id==='pt')ptOpen=e.target.open},true);
+document.addEventListener('click',e=>{if(e.target.id==='ptClear'){P=JSON.parse(JSON.stringify(EMPTY));isExample=false;ptOpen=true;save();render();const w=$('#p_w');if(w)w.focus();return}
+ const g=e.target.closest('[data-go]');if(g){go(g.dataset.go);return}
+ const tb=e.target.closest('[data-tab]');if(tb){tab=tb.dataset.tab;render();return}
+ const a=e.target.closest('[data-act]');if(a&&curR){const before=cur;const fn=curR.act[+a.dataset.act].fn;fn();const c=CALCS.find(x=>x.id===cur);
+  if(c&&cur===before){$('#inps').innerHTML=c.inp==='lb'?lbHtml(c,vals(c)):`<div class="grid2">${c.inp.map(i=>inputHtml(c,i,vals(c))).join('')}</div>`;compute()}}});
+$('#btnBack').onclick=()=>{go(null)};
+window.addEventListener('popstate',()=>{const h=location.hash.slice(1);const id=CALCS.find(x=>x.id===h)?h:null;if(id!==cur){cur=id;render()}});
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);const id=CALCS.find(x=>x.id===h)?h:null;if(id!==cur){cur=id;render()}});
+load();ptOpen=isExample||!Number.isFinite(num(P.w));{const h=location.hash.slice(1);if(CALCS.find(x=>x.id===h))cur=h}render();
+window.PLYNY={F,CALCS,TESTS,runTests,runCalc,go};
+</script>
+
+</body></html>

@@ -27,19 +27,23 @@ jobs:
         run: gradle assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK
-        run: cp app/build/outputs/apk/debug/app-debug.apk Murajaa-SOR.apk
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Murajaa-SOR.apk
+          cp plyny/build/outputs/apk/debug/plyny-debug.apk Plynoterapia-SOR.apk
 
       - uses: actions/upload-artifact@v4
         with:
           name: Murajaa-SOR-apk
-          path: Murajaa-SOR.apk
+          path: |
+            Murajaa-SOR.apk
+            Plynoterapia-SOR.apk
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest Murajaa-SOR.apk \
-            --title "Murajaa SOR (APK)" \
-            --notes "Pobierz plik Murajaa-SOR.apk i zainstaluj na telefonie z Androidem." \
+          gh release create latest Murajaa-SOR.apk Plynoterapia-SOR.apk \
+            --title "Murajaa SOR i Płynoterapia SOR (APK)" \
+            --notes "Murajaa-SOR.apk – ściągi; Plynoterapia-SOR.apk – kalkulatory płynoterapii. Pobierz i zainstaluj na telefonie z Androidem." \
             --target "${{ github.sha }}"

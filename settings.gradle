@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "MurajaaSOR"
-include ':app'
+include ':app', ':plyny'
