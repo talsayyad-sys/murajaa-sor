@@ -2,6 +2,7 @@
 // Implementacja oparta na localStorage (przeglądarka przechowuje dane lokalnie).
 
 import { ExamResult } from './types'
+import { allCases } from './cases'
 
 const KEY_RESULTS = 'symulator-ekg-wyniki'
 const KEY_PROGRESS = 'symulator-ekg-postep'
@@ -30,9 +31,9 @@ export function clearResults(): void {
 }
 
 export interface CaseProgress {
-  seen: number[]          // ID przypadków, które użytkownik zobaczył
-  correctDx: number[]     // ID z poprawnym rozpoznaniem
-  correctTx: number[]     // ID z poprawnym leczeniem
+  seen: number[]
+  correctDx: number[]
+  correctTx: number[]
 }
 
 export function loadProgress(): CaseProgress {
@@ -59,8 +60,6 @@ export function recordProgress(caseId: number, dxOk: boolean, txOk: boolean): vo
   saveProgress(p)
 }
 
-// ===== Statystyki wydajności =====
-
 export interface PerfStats {
   n: number
   avgScore: number
@@ -79,7 +78,6 @@ export function computeStats(): PerfStats {
   for (const r of results) {
     sum += r.score
     if (r.score > best) best = r.score
-    // Agregacja wg kategorii (per pytanie)
     for (const q of r.perQ) {
       const c = getCatOf(q.caseId)
       if (!byCat[c]) byCat[c] = { n: 0, avg: 0 }
@@ -96,7 +94,5 @@ export function computeStats(): PerfStats {
 }
 
 function getCatOf(caseId: number): string {
-  // Import z odroczeniem, aby uniknąć cykli
-  const { allCases } = require('./cases')
   return allCases.find(c => c.id === caseId)?.cat ?? 'nieznana'
 }
