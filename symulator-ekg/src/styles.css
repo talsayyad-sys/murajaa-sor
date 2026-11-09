@@ -1,0 +1,179 @@
+/* ===== Style globalne: profesjonalny wygląd monitora ===== */
+
+:root {
+  --bg: #0b0f14;
+  --panel: #101720;
+  --border: #1d2a38;
+  --text: #d7e0ea;
+  --muted: #7a8a9a;
+  --green: #00e07f;
+  --yellow: #ffd83d;
+  --red: #ff4a4a;
+  --cyan: #35d6ff;
+  --orange: #ff9c40;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Inter", Arial, sans-serif;
+  font-size: 14px;
+}
+
+h1, h2, h3 { font-weight: 600; margin: 0 0 8px 0; }
+
+.app-root { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ===== Pasek nawigacji ===== */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.topbar .brand { font-size: 16px; font-weight: 700; color: var(--cyan); }
+.topbar button {
+  background: #17222f; color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 14px; border-radius: 6px;
+  cursor: pointer; font-size: 13px;
+}
+.topbar button:hover { background: #1e2c3d; }
+.topbar button.active { background: var(--cyan); color: #08222e; font-weight: 600; }
+
+.main-content { flex: 1; padding: 16px; max-width: 1500px; margin: 0 auto; width: 100%; }
+
+/* ===== Karty i panele ===== */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.card h2 { color: var(--cyan); font-size: 15px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media (max-width: 1000px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+/* ===== Monitor – tryb Philips ===== */
+.monitor {
+  background: #000;
+  border: 2px solid #223;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.monitor-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 12px; font-size: 12px; color: var(--muted);
+  background: #0a0f16;
+}
+.wave-grid { display: grid; grid-template-columns: 100%; gap: 0; }
+.wave-row {
+  display: flex; border-top: 1px solid #131b26;
+  padding: 4px 10px;
+}
+.wave-label {
+  width: 120px; min-width: 120px; color: var(--cyan); font-size: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.wave-canvas-wrap { flex: 1; position: relative; height: 90px; }
+.wave-canvas { width: 100%; height: 100%; display: block; }
+
+.nums-row { display: flex; gap: 18px; padding: 8px 12px; background: #0a0f16; }
+.num-box { min-width: 120px; }
+.num-label { font-size: 11px; color: var(--muted); }
+.num-value { font-size: 26px; font-weight: 700; }
+.num-unit { font-size: 12px; color: var(--muted); }
+.hr-col { color: var(--green); }
+.spo2-col { color: var(--cyan); }
+.resp-col { color: var(--yellow); }
+.nibp-col { color: var(--orange); }
+.etco2-col { color: #b28dff; }
+.temp-col { color: #ff9cc4; }
+
+.alarm-banner {
+  background: var(--red); color: #fff; font-weight: 700;
+  padding: 8px 12px; display: flex; justify-content: space-between;
+  font-size: 14px;
+}
+.alarm-yellow { background: var(--yellow); color: #1a1a00; }
+
+/* ===== Monitor – tryb ZOLL ===== */
+.zoll { background: #1a1a1a; border: 2px solid #333; border-radius: 8px; }
+.zoll-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; background: #262626;
+  color: var(--yellow); font-weight: 700;
+}
+.zoll-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; padding: 12px; }
+.zoll-btn {
+  padding: 10px; border-radius: 8px; border: 1px solid #444;
+  background: #2e2e2e; color: #eee; cursor: pointer; font-size: 13px; text-align: center;
+}
+.zoll-btn:hover { background: #3a3a3a; }
+.zoll-btn.charge { background: var(--yellow); color: #111; font-weight: 700; }
+.zoll-btn.shock { background: var(--red); color: #fff; font-weight: 700; font-size: 15px; }
+.zoll-btn.pace { background: var(--cyan); color: #062; font-weight: 600; }
+.zoll-btn.sync { background: var(--orange); color: #111; font-weight: 600; }
+.energy-display {
+  font-size: 42px; font-weight: 800; color: var(--yellow);
+  text-align: center; padding: 10px;
+  background: #111; border-radius: 8px; margin: 8px 0;
+}
+.cpr-bar { height: 14px; background: #222; border-radius: 7px; overflow: hidden; margin-top: 6px; }
+.cpr-fill { height: 100%; background: var(--green); width: 0%; transition: width 0.2s; }
+
+/* ===== EKG 12-odprowadzeniowe ===== */
+.ecg12 { background: #fff; color: #000; padding: 10px; border-radius: 6px; }
+.ecg12 .lead-name { font-size: 11px; color: #333; font-weight: 600; margin-left: 4px; }
+
+/* ===== Formularze egzaminu ===== */
+.exam-timer {
+  font-size: 22px; font-weight: 700; color: var(--yellow);
+  background: #1a2029; padding: 8px 16px; border-radius: 8px;
+  display: inline-block;
+}
+.exam-q { font-size: 15px; line-height: 1.5; }
+.option-btn {
+  display: block; width: 100%; text-align: left;
+  background: #16202b; color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; margin: 6px 0; cursor: pointer; font-size: 14px;
+}
+.option-btn:hover { background: #1e2a38; }
+.option-btn.correct { background: #0d3d24; border-color: var(--green); color: var(--green); }
+.option-btn.wrong { background: #3d0d0d; border-color: var(--red); color: #ff8a8a; }
+.option-btn:disabled { cursor: default; opacity: 0.85; }
+
+.feedback-box {
+  background: #14212e; border-left: 4px solid var(--cyan);
+  padding: 12px; border-radius: 0 8px 8px 0; margin-top: 12px;
+}
+
+.score-badge {
+  font-size: 20px; font-weight: 700;
+  padding: 6px 18px; border-radius: 20px; display: inline-block;
+}
+.score-good { background: #0d3d24; color: var(--green); }
+.score-mid { background: #3d3d0d; color: var(--yellow); }
+.score-low { background: #3d0d0d; color: var(--red); }
+
+/* ===== Tabele ===== */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+th { color: var(--cyan); font-weight: 600; }
+
+.tag {
+  display: inline-block; font-size: 11px; padding: 2px 8px;
+  border-radius: 10px; background: #1c2a3a; color: var(--cyan);
+  margin-right: 6px;
+}
+.tag.threat { background: #3d0d0d; color: var(--red); font-weight: 700; }
+
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
